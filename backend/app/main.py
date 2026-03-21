@@ -1,33 +1,47 @@
 """
 dicto API - Main application entry point.
 
-This module sets up the FastAPI application and middleware.
+This module sets up the FastAPI application, middleware, and includes all routers.
 """
 import os
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import auth_router
+from app.core.config import API_CORS_ORIGIN, is_testing
+from app.routers import (
+    auth_router,
+)
+from app.services.bootstrap import ensure_default_users
 
-# Configuration
-APP_CORS_ORIGIN = os.getenv("API_CORS_ORIGIN", "http://localhost:5173")
-DEFAULT_USER_EMAIL = os.getenv("DEFAULT_USER_EMAIL", "test@dicto.es")
-DEFAULT_USER_PASSWORD = os.getenv("DEFAULT_USER_PASSWORD", "changeme")
-DEFAULT_ADMIN_EMAIL = os.getenv("DEFAULT_ADMIN_EMAIL", "admin@dicto.es")
-DEFAULT_ADMIN_PASSWORD = os.getenv("DEFAULT_ADMIN_PASSWORD", "changeme")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    if not is_testing():
+        from alembic.config import Config
+        from alembic import command as alembic_command
+
+        alembic_cfg = Config(os.path.join(os.path.dirname(__file__), "..", "alembic.ini"))
+        alembic_cfg.set_main_option("script_location", os.path.join(os.path.dirname(__file__), "..", "alembic"))
+        alembic_command.upgrade(alembic_cfg, "head")
+
+        ensure_default_users()
+    yield
+
 
 # Create FastAPI app
 app = FastAPI(
     title="dicto API",
     description="Spanish learning application with spaced repetition",
     version="0.4.0",
+    lifespan=lifespan,
 )
 
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[APP_CORS_ORIGIN],
+    allow_origins=[API_CORS_ORIGIN],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -35,6 +49,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth_router)
+
 
 # -----------------------
 # Health check
