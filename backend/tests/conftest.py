@@ -1,8 +1,11 @@
 """
-Shared pytest fixtures: in-memory SQLite DB, TestClient, and helper factories.
+Fixtures for testing in-memory with SQLite DB, TestClient, and helper factories.
 
-The engine uses SQLite so no MySQL is required to run tests.
+The engine is set to SQLite so no MySQL is required to run tests.
+
 SQLAlchemy's `check_same_thread=False` is needed for SQLite with FastAPI.
+
+See: https://sqlmodel.tiangolo.com/tutorial/fastapi/tests/#test-applications-with-fastapi-and-sqlmodel
 """
 import os
 os.environ.setdefault("TESTING", "1")
@@ -63,17 +66,17 @@ def client(db_session):
 
 # ---- User factories ----
 
-def make_user(db_session, email="user@test.com", password="secret", is_admin=False) -> User:
-    u = User(
+def make_user(db_session, email="user@dicto.es", password="secret", is_admin=False) -> User:
+    user_record = User(
         email=email,
         password_hash=hash_password(password),
         display_name="Test User",
         is_admin=is_admin,
     )
-    db_session.add(u)
+    db_session.add(user_record)
     db_session.commit()
-    db_session.refresh(u)
-    return u
+    db_session.refresh(user_record)
+    return user_record
 
 
 def make_session(db_session, user: User, expired=False) -> str:
@@ -81,7 +84,52 @@ def make_session(db_session, user: User, expired=False) -> str:
     session_id = str(uuid.uuid4())
     delta = timedelta(days=-1) if expired else timedelta(days=14)
     expires_at = (now_utc() + delta).replace(tzinfo=None)
-    s = DbSession(id=session_id, user_id=user.id, expires_at=expires_at)
-    db_session.add(s)
+    session_record = DbSession(id=session_id, user_id=user.id, expires_at=expires_at)
+    db_session.add(session_record)
     db_session.commit()
     return session_id
+
+
+def make_grammar_point(db_session, level="A1", slug="ser-estar", title="Ser vs Estar") -> GrammarPoint:
+    grammar_point_record = GrammarPoint(
+        level=level,
+        slug=slug,
+        title=title,
+        short_description="To be or to be.",
+        explanation="Ser is permanent; estar is temporary.",
+    )
+    db_session.add(grammar_point_record)
+    db_session.commit()
+    db_session.refresh(grammar_point_record)
+    return grammar_point_record
+
+
+def make_vocab_item(db_session, word="casa", level="A1") -> VocabItem:
+    vocab_item_record = VocabItem(
+        level=level,
+        word=word,
+        translation="house",
+        part_of_speech="noun",
+        gender="f",
+    )
+    db_session.add(vocab_item_record)
+    db_session.commit()
+    db_session.refresh(vocab_item_record)
+    return vocab_item_record
+
+
+def make_prompt(db_session, sentence="Ella ___ de Madrid.", kind="grammar",
+                grammar_point=None, vocab_item=None, answers=("es",)) -> Prompt:
+    prompt_record = Prompt(
+        kind=kind,
+        sentence=sentence,
+        grammar_point_id=grammar_point.id if grammar_point else None,
+        vocab_item_id=vocab_item.id if vocab_item else None,
+    )
+    db_session.add(prompt_record)
+    db_session.flush()
+    for accepted_answer in answers:
+        db_session.add(PromptAnswer(prompt_id=prompt_record.id, answer=accepted_answer))
+    db_session.commit()
+    db_session.refresh(prompt_record)
+    return prompt_record
