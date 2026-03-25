@@ -10,8 +10,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import API_CORS_ORIGIN, is_testing
+from app.internal import admin_router
 from app.routers import (
     auth_router,
+    grammar_router,
+    learn_router,
+    reviews_router,
+    stats_router,
+    vocab_router,
 )
 from app.services.bootstrap import ensure_default_users
 
@@ -49,6 +55,12 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth_router)
+app.include_router(grammar_router)
+app.include_router(vocab_router)
+app.include_router(learn_router)
+app.include_router(reviews_router)
+app.include_router(stats_router)
+app.include_router(admin_router)
 
 
 # -----------------------
