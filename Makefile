@@ -25,7 +25,7 @@ logs:
 	docker-compose logs -f
 
 test:
-	docker-compose run --rm \
+	docker-compose run --rm --no-deps \
 		-v $(PWD)/backend/requirements.txt:/app/requirements.txt \
 		-v $(PWD)/backend/requirements-test.txt:/app/requirements-test.txt \
 		-v $(PWD)/backend/tests:/app/tests \
@@ -33,13 +33,12 @@ test:
 		api sh -c "pip install -q -r requirements.txt -r requirements-test.txt && pytest"
 
 test-cov:
-	docker-compose run --rm \
+	docker-compose run --rm --no-deps \
 		-v $(PWD)/backend/requirements.txt:/app/requirements.txt \
 		-v $(PWD)/backend/requirements-test.txt:/app/requirements-test.txt \
 		-v $(PWD)/backend/tests:/app/tests \
 		-v $(PWD)/backend/pytest.ini:/app/pytest.ini \
 		api sh -c "pip install -q -r requirements.txt -r requirements-test.txt && pytest --cov=app --cov-report=term-missing"
-
 
 migration:
 	@test -n "$(msg)" || (echo "Usage: make migration msg='describe your change'" && exit 1)
