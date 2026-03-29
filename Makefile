@@ -1,4 +1,4 @@
-.PHONY: help up down build logs test test-cov migrate migration stamp-head
+.PHONY: help up down build logs test test-cov migrate migration stamp-head seed reset
 
 help:
 	@echo "Usage:"
@@ -62,3 +62,16 @@ stamp-head:
 		-v $(PWD)/backend/alembic.ini:/app/alembic.ini \
 		-v $(PWD)/backend/alembic:/app/alembic \
 		api sh -c "pip install -q -r requirements.txt && alembic stamp head"
+seed:
+	docker-compose run --rm api python scripts/seed.py
+
+reset:
+	@echo "Stopping containers and removing all volumes..."
+	docker-compose down -v
+	@echo "Volumes removed. Starting fresh..."
+	docker-compose up --build -d
+	@echo "Waiting for services to be ready..."
+	sleep 10
+	@echo "Seeding initial data..."
+	docker-compose run --rm api python scripts/seed.py
+	@echo "Done! Access the app at http://localhost:5173"
