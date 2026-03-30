@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { loginAsLearner } from "./helpers.js";
 
 test.describe("smoke", () => {
   test("home offers login", async ({ page }) => {
@@ -10,11 +11,7 @@ test.describe("smoke", () => {
   });
 
   test("login with default user reaches dashboard", async ({ page }) => {
-    await page.goto("/login");
-    await page.locator('input[type="email"]').fill("test@dicto.es");
-    await page.locator('input[type="password"]').fill("changeme");
-    await page.locator("form button.login-submit").click();
-    await page.waitForURL("**/dashboard", { timeout: 30_000 });
+    await loginAsLearner(page);
     await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
   });
 });
