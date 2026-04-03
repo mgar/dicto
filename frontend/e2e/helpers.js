@@ -1,6 +1,6 @@
 export const TEST_LEARNER = {
   email: process.env.E2E_USER_EMAIL || "test@dicto.es",
-  password: process.env.E2E_USER_PASSWORD || "uoc123456",
+  password: process.env.E2E_USER_PASSWORD || "changeme",
 };
 
 /**
