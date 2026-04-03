@@ -3,6 +3,8 @@ dicto API - Main application entry point.
 
 This module sets up the FastAPI application, middleware, and includes all routers.
 """
+import asyncio
+import logging
 import os
 from contextlib import asynccontextmanager
 
@@ -22,17 +24,63 @@ from app.routers import (
 from app.services.bootstrap import ensure_default_users
 
 
+logger = logging.getLogger(__name__)
+
+
+def _int_env(name: str, default: int) -> int:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    try:
+        return max(1, int(raw.strip()))
+    except ValueError:
+        return default
+
+
+def _float_env(name: str, default: float) -> float:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    try:
+        return max(0.0, float(raw.strip()))
+    except ValueError:
+        return default
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     if not is_testing():
         from alembic.config import Config
         from alembic import command as alembic_command
 
+        max_retries = _int_env("STARTUP_MIGRATION_MAX_RETRIES", 10)
+        retry_seconds = _float_env("STARTUP_MIGRATION_RETRY_SECONDS", 2.0)
+
         alembic_cfg = Config(os.path.join(os.path.dirname(__file__), "..", "alembic.ini"))
         alembic_cfg.set_main_option("script_location", os.path.join(os.path.dirname(__file__), "..", "alembic"))
-        alembic_command.upgrade(alembic_cfg, "head")
 
-        ensure_default_users()
+        last_error = None
+        for attempt in range(1, max_retries + 1):
+            try:
+                alembic_command.upgrade(alembic_cfg, "head")
+                ensure_default_users()
+                last_error = None
+                break
+            except Exception as exc:
+                last_error = exc
+                logger.exception(
+                    "Startup migration/bootstrap failed (attempt %s/%s)",
+                    attempt,
+                    max_retries,
+                )
+                if attempt < max_retries:
+                    await asyncio.sleep(retry_seconds)
+
+        if last_error is not None:
+            raise RuntimeError(
+                "Failed to apply migrations during startup. "
+                "Check database connectivity and credentials."
+            ) from last_error
     yield
 
 
