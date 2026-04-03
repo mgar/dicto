@@ -51,9 +51,9 @@ SESSION_COOKIE_SECURE = _env_bool("SESSION_COOKIE_SECURE", False)
 SESSION_COOKIE_SAMESITE = _session_samesite()
 
 DEFAULT_USER_EMAIL = os.getenv("DEFAULT_USER_EMAIL", "test@dicto.es")
-DEFAULT_USER_PASSWORD = os.getenv("DEFAULT_USER_PASSWORD", "changeme")
+DEFAULT_USER_PASSWORD = os.getenv("DEFAULT_USER_PASSWORD", "uoc123456")
 DEFAULT_ADMIN_EMAIL = os.getenv("DEFAULT_ADMIN_EMAIL", "admin@dicto.es")
-DEFAULT_ADMIN_PASSWORD = os.getenv("DEFAULT_ADMIN_PASSWORD", "changeme")
+DEFAULT_ADMIN_PASSWORD = os.getenv("DEFAULT_ADMIN_PASSWORD", "uoc123456")
 
 
 def is_testing() -> bool:
