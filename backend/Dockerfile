@@ -13,3 +13,5 @@ COPY alembic.ini /app/alembic.ini
 COPY scripts /app/scripts
 
 EXPOSE 8000
+
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
