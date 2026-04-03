@@ -33,6 +33,7 @@ services:
     volumes:
       - ./backend/app:/app/app:rw
       - ./backend/alembic:/app/alembic:rw
+      - ./backend/scripts:/app/scripts:rw
     command: >
       uvicorn app.main:app
       --host 0.0.0.0
