@@ -68,8 +68,7 @@
         </div>
       </div>
 
-      <!-- Main review area -->
-      <div class="review-card surface">
+      <div class="review-card surface" :data-prompt-id="current?.prompt_id">
         <!-- Type badge - don't reveal the answer! -->
         <TypeBadge :type="current.kind">
           {{ current.kind === 'grammar' ? current.grammar_title : 'Vocabulary' }}
