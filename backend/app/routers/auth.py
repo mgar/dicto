@@ -6,6 +6,7 @@ import os
 from fastapi import APIRouter, Cookie, Depends, Response
 from sqlalchemy.orm import Session
 
+from app.core.config import SESSION_COOKIE_SAMESITE, SESSION_COOKIE_SECURE
 from app.dependencies import COOKIE_NAME, get_current_user, get_db, now_utc
 from app.models import User
 from app.schemas import GoogleSignInRequest, LoginRequest
@@ -24,8 +25,8 @@ def set_session_cookie(resp: Response, session_id: str, expires_at) -> None:
         key=COOKIE_NAME,
         value=session_id,
         httponly=True,
-        secure=False,
-        samesite="lax",
+        secure=SESSION_COOKIE_SECURE,
+        samesite=SESSION_COOKIE_SAMESITE,
         max_age=max_age,
         path="/",
     )
@@ -33,7 +34,12 @@ def set_session_cookie(resp: Response, session_id: str, expires_at) -> None:
 
 def clear_session_cookie(resp: Response) -> None:
     """Clear the session cookie."""
-    resp.delete_cookie(key=COOKIE_NAME, path="/")
+    resp.delete_cookie(
+        key=COOKIE_NAME,
+        path="/",
+        secure=SESSION_COOKIE_SECURE,
+        samesite=SESSION_COOKIE_SAMESITE,
+    )
 
 
 @router.post("/login")
