@@ -326,8 +326,10 @@ async function submit() {
       correctAttempts.value++;
       if (isFirstAttempt) firstAttemptCorrect.value++;
     }
+    if (isFirstAttempt && counts.state.dueNow != null) {
+      counts.state.dueNow = Math.max(0, counts.state.dueNow - 1);
+    }
     result.value = data;
-    await counts.refresh();
   } finally {
     submitting.value = false;
   }

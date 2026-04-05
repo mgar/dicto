@@ -403,6 +403,9 @@ onMounted(loadNewItems);
 
 /* Vocab card */
 .vocab-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
   padding: 20px 0 30px;
 }
