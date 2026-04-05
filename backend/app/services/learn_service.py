@@ -28,49 +28,55 @@ def _new_learning_state(user_id: int, prompt_id: int, due_now) -> ReviewState:
 
 
 def get_learn_levels(db_session: Session, user: User) -> dict:
+    grammar_counts = {
+        level: count
+        for level, count in db_session.execute(
+            select(GrammarPoint.level, func.count()).group_by(GrammarPoint.level)
+        ).all()
+    }
+    vocab_counts = {
+        level: count
+        for level, count in db_session.execute(
+            select(VocabItem.level, func.count()).group_by(VocabItem.level)
+        ).all()
+    }
+
+    prompt_counts = {
+        level: count
+        for level, count in db_session.execute(
+            select(
+                func.coalesce(GrammarPoint.level, VocabItem.level),
+                func.count(Prompt.id),
+            )
+            .select_from(Prompt)
+            .outerjoin(GrammarPoint, GrammarPoint.id == Prompt.grammar_point_id)
+            .outerjoin(VocabItem, VocabItem.id == Prompt.vocab_item_id)
+            .group_by(func.coalesce(GrammarPoint.level, VocabItem.level))
+        ).all()
+    }
+
+    queue_counts = {
+        level: count
+        for level, count in db_session.execute(
+            select(
+                func.coalesce(GrammarPoint.level, VocabItem.level),
+                func.count(ReviewState.prompt_id),
+            )
+            .select_from(ReviewState)
+            .join(Prompt, Prompt.id == ReviewState.prompt_id)
+            .outerjoin(GrammarPoint, GrammarPoint.id == Prompt.grammar_point_id)
+            .outerjoin(VocabItem, VocabItem.id == Prompt.vocab_item_id)
+            .where(and_(ReviewState.user_id == user.id, ReviewState.status == "learning"))
+            .group_by(func.coalesce(GrammarPoint.level, VocabItem.level))
+        ).all()
+    }
+
     levels_data = []
     for level in CEFR_LEVELS:
-        grammar_count = db_session.execute(
-            select(func.count()).select_from(GrammarPoint).where(GrammarPoint.level == level)
-        ).scalar_one()
-
-        vocab_count = db_session.execute(
-            select(func.count()).select_from(VocabItem).where(VocabItem.level == level)
-        ).scalar_one()
-
-        grammar_prompts = db_session.execute(
-            select(func.count())
-            .select_from(Prompt)
-            .join(GrammarPoint, GrammarPoint.id == Prompt.grammar_point_id)
-            .where(GrammarPoint.level == level)
-        ).scalar_one()
-
-        vocab_prompts = db_session.execute(
-            select(func.count())
-            .select_from(Prompt)
-            .join(VocabItem, VocabItem.id == Prompt.vocab_item_id)
-            .where(VocabItem.level == level)
-        ).scalar_one()
-
-        total_prompts = grammar_prompts + vocab_prompts
-
-        grammar_in_queue = db_session.execute(
-            select(func.count())
-            .select_from(ReviewState)
-            .join(Prompt, Prompt.id == ReviewState.prompt_id)
-            .join(GrammarPoint, GrammarPoint.id == Prompt.grammar_point_id)
-            .where(and_(ReviewState.user_id == user.id, GrammarPoint.level == level))
-        ).scalar_one()
-
-        vocab_in_queue = db_session.execute(
-            select(func.count())
-            .select_from(ReviewState)
-            .join(Prompt, Prompt.id == ReviewState.prompt_id)
-            .join(VocabItem, VocabItem.id == Prompt.vocab_item_id)
-            .where(and_(ReviewState.user_id == user.id, VocabItem.level == level))
-        ).scalar_one()
-
-        in_queue = grammar_in_queue + vocab_in_queue
+        grammar_count = int(grammar_counts.get(level, 0))
+        vocab_count = int(vocab_counts.get(level, 0))
+        total_prompts = int(prompt_counts.get(level, 0))
+        in_queue = int(queue_counts.get(level, 0))
 
         levels_data.append({
             "level": level,
@@ -81,9 +87,11 @@ def get_learn_levels(db_session: Session, user: User) -> dict:
             "fully_added": in_queue >= total_prompts and total_prompts > 0,
         })
 
-    total_in_queue = db_session.execute(
-        select(func.count()).select_from(ReviewState).where(ReviewState.user_id == user.id)
-    ).scalar_one()
+    total_in_queue = int(
+        db_session.execute(
+            select(func.count()).select_from(ReviewState).where(ReviewState.user_id == user.id)
+        ).scalar_one()
+    )
 
     return {"levels": levels_data, "total_in_queue": total_in_queue}
 

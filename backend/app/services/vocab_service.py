@@ -11,37 +11,47 @@ CEFR_ORDER = ["A1", "A2", "B1", "B2", "C1", "C2"]
 
 
 def list_vocab_items_by_level(db_session: Session, user: User) -> dict:
-    vocab_items = db_session.execute(
-        select(VocabItem).order_by(VocabItem.level, VocabItem.word)
-    ).scalars().all()
+    rows = db_session.execute(
+        select(
+            VocabItem.id,
+            VocabItem.level,
+            VocabItem.word,
+            VocabItem.translation,
+            VocabItem.part_of_speech,
+            VocabItem.gender,
+            func.count(Prompt.id).label("total_prompts"),
+            func.sum(case((ReviewState.user_id.is_not(None), 1), else_=0)).label("in_queue"),
+        )
+        .select_from(VocabItem)
+        .outerjoin(Prompt, Prompt.vocab_item_id == VocabItem.id)
+        .outerjoin(
+            ReviewState,
+            and_(ReviewState.user_id == user.id, ReviewState.prompt_id == Prompt.id),
+        )
+        .group_by(
+            VocabItem.id,
+            VocabItem.level,
+            VocabItem.word,
+            VocabItem.translation,
+            VocabItem.part_of_speech,
+            VocabItem.gender,
+        )
+        .order_by(VocabItem.level, VocabItem.word)
+    ).all()
     result: dict = {}
-    for vocab_item in vocab_items:
-        total_prompts = db_session.execute(
-            select(func.count()).select_from(Prompt).where(Prompt.vocab_item_id == vocab_item.id)
-        ).scalar_one()
-
-        in_queue = db_session.execute(
-            select(func.count())
-            .select_from(ReviewState)
-            .join(Prompt, Prompt.id == ReviewState.prompt_id)
-            .where(
-                and_(
-                    ReviewState.user_id == user.id,
-                    Prompt.vocab_item_id == vocab_item.id,
-                )
-            )
-        ).scalar_one()
-
-        level = vocab_item.level
+    for row in rows:
+        total_prompts = int(row.total_prompts or 0)
+        in_queue = int(row.in_queue or 0)
+        level = row.level
         if level not in result:
             result[level] = {"level": level, "items": [], "total_prompts": 0, "in_queue": 0}
 
         result[level]["items"].append({
-            "id": vocab_item.id,
-            "word": vocab_item.word,
-            "translation": vocab_item.translation,
-            "part_of_speech": vocab_item.part_of_speech,
-            "gender": vocab_item.gender,
+            "id": row.id,
+            "word": row.word,
+            "translation": row.translation,
+            "part_of_speech": row.part_of_speech,
+            "gender": row.gender,
             "total_prompts": total_prompts,
             "in_queue": in_queue,
             "fully_added": in_queue >= total_prompts and total_prompts > 0,

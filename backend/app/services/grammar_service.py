@@ -29,36 +29,44 @@ def list_grammar_points(db_session: Session) -> dict:
 
 
 def list_grammar_points_by_level(db_session: Session, user: User) -> dict:
-    grammar_points = db_session.execute(
-        select(GrammarPoint).order_by(GrammarPoint.level, GrammarPoint.id)
-    ).scalars().all()
+    rows = db_session.execute(
+        select(
+            GrammarPoint.id,
+            GrammarPoint.level,
+            GrammarPoint.slug,
+            GrammarPoint.title,
+            GrammarPoint.short_description,
+            func.count(Prompt.id).label("total_prompts"),
+            func.sum(case((ReviewState.user_id.is_not(None), 1), else_=0)).label("in_queue"),
+        )
+        .select_from(GrammarPoint)
+        .outerjoin(Prompt, Prompt.grammar_point_id == GrammarPoint.id)
+        .outerjoin(
+            ReviewState,
+            and_(ReviewState.user_id == user.id, ReviewState.prompt_id == Prompt.id),
+        )
+        .group_by(
+            GrammarPoint.id,
+            GrammarPoint.level,
+            GrammarPoint.slug,
+            GrammarPoint.title,
+            GrammarPoint.short_description,
+        )
+        .order_by(GrammarPoint.level, GrammarPoint.id)
+    ).all()
     result: dict = {}
-    for grammar_point in grammar_points:
-        total_prompts = db_session.execute(
-            select(func.count()).select_from(Prompt).where(Prompt.grammar_point_id == grammar_point.id)
-        ).scalar_one()
-
-        in_queue = db_session.execute(
-            select(func.count())
-            .select_from(ReviewState)
-            .join(Prompt, Prompt.id == ReviewState.prompt_id)
-            .where(
-                and_(
-                    ReviewState.user_id == user.id,
-                    Prompt.grammar_point_id == grammar_point.id,
-                )
-            )
-        ).scalar_one()
-
-        level = grammar_point.level
+    for row in rows:
+        total_prompts = int(row.total_prompts or 0)
+        in_queue = int(row.in_queue or 0)
+        level = row.level
         if level not in result:
             result[level] = {"level": level, "items": [], "total_prompts": 0, "in_queue": 0}
 
         result[level]["items"].append({
-            "id": grammar_point.id,
-            "slug": grammar_point.slug,
-            "title": grammar_point.title,
-            "short_description": grammar_point.short_description,
+            "id": row.id,
+            "slug": row.slug,
+            "title": row.title,
+            "short_description": row.short_description,
             "total_prompts": total_prompts,
             "in_queue": in_queue,
             "fully_added": in_queue >= total_prompts and total_prompts > 0,
