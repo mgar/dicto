@@ -1,4 +1,4 @@
-.PHONY: help up down build logs test test-cov e2e migration migrate stamp-head seed reset
+.PHONY: help up down build logs test test-cov test-frontend test-all e2e migration migrate stamp-head seed reset
 
 help:
 	@echo "Usage:"
@@ -8,6 +8,8 @@ help:
 	@echo "  make logs            Tail logs from all services"
 	@echo "  make test            Run backend tests (inside Docker)"
 	@echo "  make test-cov        Run backend tests with coverage report"
+	@echo "  make test-frontend   Run frontend unit tests (Vitest)"
+	@echo "  make test-all        Run backend + frontend unit tests"
 	@echo "  make e2e             Start db+api+web, wait for readiness, run Playwright E2E"
 	@echo "  make migration msg=  Generate a new Alembic migration (e.g. msg='add index')"
 	@echo "  make migrate         Apply pending migrations against the running DB"
@@ -42,6 +44,11 @@ test-cov:
 		-v $(PWD)/backend/tests:/app/tests \
 		-v $(PWD)/backend/pytest.ini:/app/pytest.ini \
 		api sh -c "pip install -q -r requirements-test.txt && pytest --cov=app --cov-report=term-missing"
+
+test-frontend:
+	cd frontend && npm ci && npm run test
+
+test-all: test test-frontend
 
 e2e:
 	@test -f .env || cp .env.example .env
