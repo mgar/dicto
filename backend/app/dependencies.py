@@ -38,19 +38,21 @@ def get_current_user(
     if not session_id:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    row_session = db_session.execute(select(DbSession).where(DbSession.id == session_id)).scalar_one_or_none()
-    if not row_session:
+    row = db_session.execute(
+        select(DbSession, User)
+        .join(User, User.id == DbSession.user_id)
+        .where(DbSession.id == session_id)
+    ).one_or_none()
+
+    if not row:
         raise HTTPException(status_code=401, detail="Invalid session")
 
+    row_session, current_user = row
     expires_at = row_session.expires_at.replace(tzinfo=timezone.utc)
     if expires_at < now_utc():
         db_session.execute(delete(DbSession).where(DbSession.id == session_id))
         db_session.commit()
         raise HTTPException(status_code=401, detail="Session expired")
-
-    current_user = db_session.execute(select(User).where(User.id == row_session.user_id)).scalar_one_or_none()
-    if not current_user:
-        raise HTTPException(status_code=401, detail="User not found")
 
     return current_user
 
