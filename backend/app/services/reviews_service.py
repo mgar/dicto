@@ -65,12 +65,15 @@ def submit_review_answer(
     if not review_state:
         raise ServiceError(404, "No review state for this prompt")
 
-    prompt = db_session.execute(select(Prompt).where(Prompt.id == prompt_id)).scalar_one_or_none()
-    if not prompt:
+    prompt_rows = db_session.execute(
+        select(Prompt, PromptAnswer)
+        .outerjoin(PromptAnswer, PromptAnswer.prompt_id == Prompt.id)
+        .where(Prompt.id == prompt_id)
+    ).all()
+    if not prompt_rows:
         raise ServiceError(404, "Prompt not found")
-
-    answers = db_session.execute(select(PromptAnswer).where(PromptAnswer.prompt_id == prompt_id)).scalars().all()
-    accepted = [answer_row.answer for answer_row in answers]
+    prompt = prompt_rows[0][0]
+    accepted = [row[1].answer for row in prompt_rows if row[1] is not None]
 
     is_correct, grade, flags, expected = grade_cloze(user_answer, accepted)
 

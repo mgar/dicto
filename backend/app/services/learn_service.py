@@ -55,21 +55,27 @@ def get_learn_levels(db_session: Session, user: User) -> dict:
         ).all()
     }
 
-    queue_counts = {
-        level: count
-        for level, count in db_session.execute(
-            select(
-                func.coalesce(GrammarPoint.level, VocabItem.level),
-                func.count(ReviewState.prompt_id),
-            )
-            .select_from(ReviewState)
-            .join(Prompt, Prompt.id == ReviewState.prompt_id)
-            .outerjoin(GrammarPoint, GrammarPoint.id == Prompt.grammar_point_id)
-            .outerjoin(VocabItem, VocabItem.id == Prompt.vocab_item_id)
-            .where(and_(ReviewState.user_id == user.id, ReviewState.status == "learning"))
-            .group_by(func.coalesce(GrammarPoint.level, VocabItem.level))
-        ).all()
-    }
+    # Single query grouped by (level, status) gives both queue_counts and total_in_queue.
+    status_level_rows = db_session.execute(
+        select(
+            func.coalesce(GrammarPoint.level, VocabItem.level),
+            ReviewState.status,
+            func.count(ReviewState.prompt_id),
+        )
+        .select_from(ReviewState)
+        .join(Prompt, Prompt.id == ReviewState.prompt_id)
+        .outerjoin(GrammarPoint, GrammarPoint.id == Prompt.grammar_point_id)
+        .outerjoin(VocabItem, VocabItem.id == Prompt.vocab_item_id)
+        .where(ReviewState.user_id == user.id)
+        .group_by(func.coalesce(GrammarPoint.level, VocabItem.level), ReviewState.status)
+    ).all()
+
+    queue_counts: dict = {}
+    total_in_queue = 0
+    for level, status, count in status_level_rows:
+        total_in_queue += int(count)
+        if status == "learning":
+            queue_counts[level] = int(count)
 
     levels_data = []
     for level in CEFR_LEVELS:
@@ -86,12 +92,6 @@ def get_learn_levels(db_session: Session, user: User) -> dict:
             "in_queue": in_queue,
             "fully_added": in_queue >= total_prompts and total_prompts > 0,
         })
-
-    total_in_queue = int(
-        db_session.execute(
-            select(func.count()).select_from(ReviewState).where(ReviewState.user_id == user.id)
-        ).scalar_one()
-    )
 
     return {"levels": levels_data, "total_in_queue": total_in_queue}
 
@@ -384,6 +384,19 @@ def get_study_queue(db_session: Session, user: User) -> dict:
     )
     rows = db_session.execute(stmt).all()
 
+    # Batch-fetch all grammar examples in one query instead of one per grammar point.
+    grammar_point_ids = list(dict.fromkeys(
+        gp.id for _, p, gp, _ in rows if p.kind == "grammar" and gp
+    ))
+    examples_by_gp: dict[int, list] = {}
+    if grammar_point_ids:
+        for ex in db_session.execute(
+            select(GrammarExample)
+            .where(GrammarExample.grammar_point_id.in_(grammar_point_ids))
+            .order_by(GrammarExample.sort_order)
+        ).scalars().all():
+            examples_by_gp.setdefault(ex.grammar_point_id, []).append(ex)
+
     seen_grammar: set[int] = set()
     seen_vocab: set[int] = set()
     items: list[dict] = []
@@ -394,12 +407,7 @@ def get_study_queue(db_session: Session, user: User) -> dict:
                 continue
             seen_grammar.add(grammar_point.id)
 
-            examples_stmt = (
-                select(GrammarExample)
-                .where(GrammarExample.grammar_point_id == grammar_point.id)
-                .order_by(GrammarExample.sort_order)
-            )
-            examples = db_session.execute(examples_stmt).scalars().all()
+            examples = examples_by_gp.get(grammar_point.id, [])
 
             structure: list = []
             if grammar_point.structure:
