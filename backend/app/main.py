@@ -33,6 +33,8 @@ async def lifespan(app: FastAPI):
         alembic_command.upgrade(alembic_cfg, "head")
 
         ensure_default_users()
+        from app.services.seed_service import seed_content
+        seed_content()
     yield
 
 

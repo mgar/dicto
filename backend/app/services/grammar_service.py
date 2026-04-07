@@ -80,17 +80,16 @@ def list_grammar_points_by_level(db_session: Session, user: User) -> dict:
 
 
 def get_grammar_point(db_session: Session, user: User, grammar_point_id: int) -> dict:
-    grammar_point = db_session.execute(
-        select(GrammarPoint).where(GrammarPoint.id == grammar_point_id)
-    ).scalar_one_or_none()
-    if not grammar_point:
-        raise ServiceError(404, "Not found")
-
-    examples = db_session.execute(
-        select(GrammarExample)
-        .where(GrammarExample.grammar_point_id == grammar_point_id)
+    gp_rows = db_session.execute(
+        select(GrammarPoint, GrammarExample)
+        .outerjoin(GrammarExample, GrammarExample.grammar_point_id == GrammarPoint.id)
+        .where(GrammarPoint.id == grammar_point_id)
         .order_by(GrammarExample.sort_order)
-    ).scalars().all()
+    ).all()
+    if not gp_rows:
+        raise ServiceError(404, "Not found")
+    grammar_point = gp_rows[0][0]
+    examples = [row[1] for row in gp_rows if row[1] is not None]
 
     structure: list = []
     if grammar_point.structure:
