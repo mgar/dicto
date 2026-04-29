@@ -1,9 +1,10 @@
-from datetime import date
+from datetime import date, timedelta
 
 import pytest
 from sqlalchemy import select
 
 from app.models import ReviewState
+from app.dependencies import now_utc
 from app.schemas.learn import MarkStudiedIn, PreferencesIn
 from app.services import learn_service
 from app.services.errors import ServiceError
@@ -96,3 +97,218 @@ class TestLearnService:
         service_output = learn_service.auto_add_items(db_session, user, tz_offset=0)
         assert service_output["added"] == 3
         assert user.last_items_added_at is not None
+        states = db_session.execute(
+            select(ReviewState).where(ReviewState.user_id == user.id)
+        ).scalars().all()
+        assert all(state.introduced_at is not None for state in states)
+        assert {state.introduced_local_date for state in states} == {date.today()}
+
+    def test_add_level_unlocks_level_and_fills_daily_batch(self, db_session):
+        user = make_user(db_session, email="svc-add-level@dicto.es", password="pw")
+        user.daily_new_limit = 2
+        user.content_preference = "both"
+        user.selected_levels = "A1"
+        db_session.commit()
+
+        grammar_point = make_grammar_point(db_session, level="A2", slug="add-level-gp")
+        vocab = make_vocab_item(db_session, level="A2", word="mesa")
+        make_prompt(db_session, grammar_point=grammar_point, sentence="Ella ___ lista.", answers=("está",))
+        make_prompt(db_session, grammar_point=grammar_point, sentence="Yo ___ de aquí.", answers=("soy",))
+        make_prompt(
+            db_session,
+            kind="vocab",
+            sentence="La ___ es grande.",
+            vocab_item=vocab,
+            answers=("mesa",),
+        )
+
+        service_output = learn_service.learn_add_level(db_session, user, "A2", None, None)
+
+        assert service_output["added"] == 2
+        assert service_output["daily_limit"] == 2
+        assert service_output["unlocked"] is True
+        assert user.selected_levels == "A1,A2"
+        assert user.last_items_added_at is not None
+
+        states_count = db_session.execute(
+            select(ReviewState).where(ReviewState.user_id == user.id)
+        ).scalars().all()
+        assert len(states_count) == 2
+
+    def test_add_level_does_not_stack_on_unstudied_items(self, db_session):
+        user = make_user(db_session, email="svc-add-level-unstudied@dicto.es", password="pw")
+        user.daily_new_limit = 2
+        user.content_preference = "both"
+        user.selected_levels = "A1"
+        db_session.commit()
+
+        existing_gp = make_grammar_point(db_session, level="A1", slug="existing-gp")
+        existing_prompt = make_prompt(db_session, grammar_point=existing_gp, sentence="Ella ___ aquí.", answers=("está",))
+        make_review_state(db_session, user, existing_prompt, status="learning")
+
+        new_gp = make_grammar_point(db_session, level="A2", slug="new-gp")
+        make_prompt(db_session, grammar_point=new_gp, sentence="Yo ___ listo.", answers=("estoy",))
+        make_prompt(db_session, grammar_point=new_gp, sentence="Nosotros ___ aquí.", answers=("estamos",))
+
+        service_output = learn_service.learn_add_level(db_session, user, "A2", None, None)
+
+        assert service_output["added"] == 0
+        assert service_output["unstudied_count"] == 1
+        assert user.selected_levels == "A1,A2"
+
+        states = db_session.execute(
+            select(ReviewState).where(ReviewState.user_id == user.id)
+        ).scalars().all()
+        assert len(states) == 1
+
+    def test_add_level_does_not_add_second_daily_batch(self, db_session):
+        user = make_user(db_session, email="svc-add-level-today@dicto.es", password="pw")
+        user.daily_new_limit = 2
+        user.content_preference = "both"
+        user.selected_levels = "A1"
+        user.last_items_added_at = now_utc().replace(tzinfo=None) - timedelta(minutes=5)
+        db_session.commit()
+
+        grammar_point = make_grammar_point(db_session, level="A2", slug="today-gp")
+        make_prompt(db_session, grammar_point=grammar_point, sentence="Ella ___ lista.", answers=("está",))
+
+        service_output = learn_service.learn_add_level(db_session, user, "A2", None, None, tz_offset=0)
+
+        assert service_output["added"] == 0
+        assert service_output["already_added_today"] is True
+        assert user.selected_levels == "A1,A2"
+
+    def test_auto_add_does_not_refill_after_today_items_are_reviewed(self, db_session):
+        user = make_user(db_session, email="svc-auto-reviewed-today@dicto.es", password="pw")
+        user.daily_new_limit = 2
+        user.content_preference = "both"
+        user.selected_levels = "A1"
+        user.last_items_added_at = now_utc().replace(tzinfo=None) - timedelta(minutes=30)
+        db_session.commit()
+
+        answered_at = now_utc().replace(tzinfo=None) - timedelta(minutes=5)
+        for idx in range(2):
+            grammar_point = make_grammar_point(db_session, level="A1", slug=f"reviewed-today-gp-{idx}")
+            prompt = make_prompt(
+                db_session,
+                grammar_point=grammar_point,
+                sentence=f"Reviewed {idx} ___.",
+                answers=("es",),
+            )
+            make_review_state(
+                db_session,
+                user,
+                prompt,
+                status="reviewing",
+                due_at=answered_at + timedelta(days=1),
+                interval_days=1,
+                repetitions=1,
+                introduced_at=answered_at - timedelta(minutes=25),
+                introduced_local_date=date.today(),
+            )
+            state = db_session.execute(
+                select(ReviewState).where(
+                    ReviewState.user_id == user.id,
+                    ReviewState.prompt_id == prompt.id,
+                )
+            ).scalar_one()
+            state.last_reviewed_at = answered_at
+
+        extra_gp = make_grammar_point(db_session, level="A1", slug="extra-after-review-gp")
+        make_prompt(db_session, grammar_point=extra_gp, sentence="Extra ___.", answers=("es",))
+        db_session.commit()
+
+        service_output = learn_service.auto_add_items(db_session, user, tz_offset=0)
+
+        assert service_output["added"] == 0
+        assert service_output["introduced_today"] == 2
+        assert service_output["already_added_today"] is True
+
+    def test_add_level_fills_remaining_daily_allowance_after_limit_increase(self, db_session):
+        user = make_user(db_session, email="svc-add-level-increase@dicto.es", password="pw")
+        user.daily_new_limit = 5
+        user.content_preference = "both"
+        user.selected_levels = "A1"
+        user.last_items_added_at = now_utc().replace(tzinfo=None) - timedelta(minutes=5)
+        db_session.commit()
+
+        answered_at = now_utc().replace(tzinfo=None) - timedelta(minutes=5)
+        for idx in range(3):
+            grammar_point = make_grammar_point(db_session, level="A1", slug=f"studied-gp-{idx}")
+            prompt = make_prompt(
+                db_session,
+                grammar_point=grammar_point,
+                sentence=f"Studied {idx} ___.",
+                answers=("es",),
+            )
+            make_review_state(
+                db_session,
+                user,
+                prompt,
+                status="reviewing",
+                due_at=answered_at + timedelta(days=1),
+                interval_days=1,
+                repetitions=1,
+                introduced_at=answered_at - timedelta(minutes=25),
+                introduced_local_date=date.today(),
+            )
+            state = db_session.execute(
+                select(ReviewState).where(
+                    ReviewState.user_id == user.id,
+                    ReviewState.prompt_id == prompt.id,
+                )
+            ).scalar_one()
+            state.last_reviewed_at = answered_at
+
+        new_gp = make_grammar_point(db_session, level="A2", slug="increased-limit-gp")
+        make_prompt(db_session, grammar_point=new_gp, sentence="Ella ___ lista.", answers=("está",))
+        make_prompt(db_session, grammar_point=new_gp, sentence="Yo ___ de aquí.", answers=("soy",))
+        make_prompt(db_session, grammar_point=new_gp, sentence="Nosotros ___ aquí.", answers=("estamos",))
+
+        service_output = learn_service.learn_add_level(db_session, user, "A2", None, 5, tz_offset=0)
+
+        assert service_output["added"] == 2
+        assert service_output["introduced_today"] == 5
+        assert service_output["daily_limit"] == 5
+        assert user.selected_levels == "A1,A2"
+
+        states = db_session.execute(
+            select(ReviewState).where(ReviewState.user_id == user.id)
+        ).scalars().all()
+        assert len(states) == 5
+
+    def test_add_level_requires_daily_limit(self, db_session):
+        user = make_user(db_session, email="svc-add-level-no-limit@dicto.es", password="pw")
+
+        with pytest.raises(ServiceError) as exc:
+            learn_service.learn_add_level(db_session, user, "A1", None, None)
+
+        assert exc.value.status_code == 400
+
+    def test_remove_level_unlock_and_learning_items_only(self, db_session):
+        user = make_user(db_session, email="svc-remove-level@dicto.es", password="pw")
+        user.daily_new_limit = 3
+        user.content_preference = "both"
+        user.selected_levels = "A1,A2"
+        db_session.commit()
+
+        a2_learning_gp = make_grammar_point(db_session, level="A2", slug="remove-learning")
+        a2_reviewing_gp = make_grammar_point(db_session, level="A2", slug="keep-reviewing")
+        a1_learning_gp = make_grammar_point(db_session, level="A1", slug="keep-a1")
+        a2_learning_prompt = make_prompt(db_session, grammar_point=a2_learning_gp, sentence="A2 learning ___.")
+        a2_reviewing_prompt = make_prompt(db_session, grammar_point=a2_reviewing_gp, sentence="A2 reviewing ___.")
+        a1_learning_prompt = make_prompt(db_session, grammar_point=a1_learning_gp, sentence="A1 learning ___.")
+        make_review_state(db_session, user, a2_learning_prompt, status="learning")
+        make_review_state(db_session, user, a2_reviewing_prompt, status="reviewing")
+        make_review_state(db_session, user, a1_learning_prompt, status="learning")
+
+        service_output = learn_service.learn_remove_level(db_session, user, "A2")
+
+        assert service_output["selected_levels"] == ["A1"]
+        assert service_output["removed_learning_items"] == 1
+        assert user.selected_levels == "A1"
+
+        remaining_states = db_session.execute(
+            select(ReviewState.prompt_id).where(ReviewState.user_id == user.id)
+        ).scalars().all()
+        assert set(remaining_states) == {a2_reviewing_prompt.id, a1_learning_prompt.id}

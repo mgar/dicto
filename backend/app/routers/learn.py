@@ -47,12 +47,13 @@ def learn_queue(
 def learn_next(
     count: int = 5,
     kind: str | None = None,
+    tz_offset: int | None = None,
     db_session: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
     """Adds the next N unseen prompts to review_state with due_at=now."""
     try:
-        return learn_service.learn_next(db_session, user, count, kind)
+        return learn_service.learn_next(db_session, user, count, kind, tz_offset)
     except ServiceError as err:
         raise_http(err)
 
@@ -88,12 +89,26 @@ def learn_add_level(
     level: str,
     kind: str | None = None,
     limit: int | None = None,
+    tz_offset: int | None = None,
     db_session: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
     """Adds prompts from a CEFR level to the learning queue."""
     try:
-        return learn_service.learn_add_level(db_session, user, level, kind, limit)
+        return learn_service.learn_add_level(db_session, user, level, kind, limit, tz_offset)
+    except ServiceError as err:
+        raise_http(err)
+
+
+@router.delete("/level/{level}")
+def learn_remove_level(
+    level: str,
+    db_session: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Removes a CEFR level from future daily batches and clears unstudied queued items."""
+    try:
+        return learn_service.learn_remove_level(db_session, user, level)
     except ServiceError as err:
         raise_http(err)
 

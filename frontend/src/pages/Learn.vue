@@ -14,6 +14,18 @@
     <div v-if="loading" class="loading">Loading...</div>
 
     <template v-else>
+      <div
+        v-if="feedback.text"
+        class="feedback-banner"
+        :class="feedback.type"
+        :role="feedback.type === 'error' ? 'alert' : 'status'"
+      >
+        <span>{{ feedback.text }}</span>
+        <button class="feedback-dismiss" type="button" aria-label="Dismiss message" @click="clearFeedback">
+          <Icon name="x" />
+        </button>
+      </div>
+
       <!-- Empty State - Onboarding -->
       <div v-if="totalInQueue === 0" class="onboarding">
         <div class="welcome-card card">
@@ -21,7 +33,7 @@
             <Icon name="book" stroke-width="1.5" />
           </div>
           <h3>Welcome to your learning journey!</h3>
-          <p class="muted">Select the levels you want to learn. We'll add all grammar and vocabulary from those levels to your queue.</p>
+          <p class="muted">Select the levels you want to learn. We'll add a daily batch and keep the rest for future days.</p>
         </div>
 
         <!-- Level Selection -->
@@ -103,6 +115,10 @@
               <span class="limit-label">{{ option.label }}</span>
             </button>
           </div>
+          <label class="custom-limit">
+            <span>Custom daily maximum</span>
+            <input class="input" type="number" v-model.number="dailyLimit" min="1" max="50" />
+          </label>
         </div>
 
         <!-- Summary and Start -->
@@ -118,11 +134,11 @@
             </div>
             <div class="summary-row">
               <span>Daily goal</span>
-              <span class="summary-value">{{ dailyLimit }} items/day</span>
+              <span class="summary-value">{{ normalizedDailyLimit }} items/day</span>
             </div>
             <div class="summary-row highlight">
               <span>Estimated completion</span>
-              <span class="summary-value">~{{ Math.ceil(totalSelectedPrompts / dailyLimit) }} days</span>
+              <span class="summary-value">~{{ Math.ceil(totalSelectedPrompts / normalizedDailyLimit) }} days</span>
             </div>
           </div>
 
@@ -167,17 +183,50 @@
           </div>
         </div>
 
+        <div class="daily-settings card">
+          <div class="section-header-row">
+            <div>
+              <h3>Daily new items</h3>
+              <p class="muted">Choose a daily pace that keeps new lessons fresh without piling up.</p>
+            </div>
+            <span class="pill subtle">{{ normalizedDailyLimit }} / day</span>
+          </div>
+
+          <div class="daily-settings-controls">
+            <div class="segmented daily-limit-segments" aria-label="Daily new item presets">
+              <button
+                v-for="option in dailyOptions"
+                :key="option.value"
+                class="segment-btn"
+                :class="{ active: dailyLimit === option.value }"
+                @click="dailyLimit = option.value"
+              >
+                {{ option.value }}
+              </button>
+            </div>
+
+            <label class="custom-limit inline">
+              <span>Custom</span>
+              <input class="input" type="number" v-model.number="dailyLimit" min="1" max="50" />
+            </label>
+
+            <button class="btn secondary" @click="saveLearningPreferences" :disabled="savingPreferences">
+              {{ savingPreferences ? "Saving..." : "Save" }}
+            </button>
+          </div>
+        </div>
+
         <!-- Expandable: Add more items -->
         <details class="add-more-section">
           <summary class="add-more-toggle">
-            <span>Add more items to queue</span>
-            <span class="available-badge">{{ availableToAdd }} available</span>
+            <span>Study more today</span>
+            <span class="pill subtle">{{ availableToAdd }} available</span>
           </summary>
           
-          <div class="add-more-content card">
+          <div class="add-more-content surface">
             <div class="add-controls">
               <div class="count-control">
-                <label>Items to add</label>
+                <label>Extra items</label>
                 <div class="stepper">
                   <button class="stepper-btn" @click="count = Math.max(1, count - 1)">−</button>
                   <input class="stepper-input" type="number" v-model.number="count" min="1" max="50" />
@@ -208,7 +257,7 @@
 
               <button class="btn" @click="learnNext" :disabled="learning || availableToAdd === 0">
                 <Icon v-if="!learning" name="plus" />
-                {{ learning ? "Adding..." : `Add ${count} Items` }}
+                {{ learning ? "Adding..." : `Add ${count} More` }}
               </button>
             </div>
           </div>
@@ -232,14 +281,14 @@
         <!-- Unlock levels -->
         <div class="unlock-levels card">
           <h3>Unlock new levels</h3>
-          <p class="muted">Add entire difficulty levels to your queue</p>
+          <p class="muted">Unlocked levels feed your daily batches without increasing today's queue beyond your limit.</p>
           
           <div class="mini-levels">
             <div 
               v-for="lvl in levels" 
               :key="lvl.level" 
               class="mini-level"
-              :class="{ complete: lvl.fully_added }"
+              :class="{ complete: lvl.fully_added, unlocked: isLevelUnlocked(lvl.level) }"
             >
               <div class="mini-level-info">
                 <LevelBadge :level="lvl.level" size="small" />
@@ -253,10 +302,11 @@
               </div>
               <button 
                 class="btn secondary small" 
-                @click="addWholeLevel(lvl.level)"
-                :disabled="lvl.fully_added || addingLevelName === lvl.level"
+                :class="{ 'remove-level-btn': isLevelUnlocked(lvl.level) }"
+                @click="toggleWholeLevel(lvl)"
+                :disabled="isLevelActionDisabled(lvl)"
               >
-                {{ addingLevelName === lvl.level ? '...' : lvl.fully_added ? '✓' : 'Add' }}
+                {{ levelActionLabel(lvl) }}
               </button>
             </div>
           </div>
@@ -272,7 +322,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { apiFetch } from "../api";
 import { useCounts } from "../counts";
@@ -287,6 +337,12 @@ const loading = ref(true);
 const adding = ref(false);
 const learning = ref(false);
 const addingLevelName = ref(null);
+const removingLevelName = ref(null);
+const savingPreferences = ref(false);
+const feedback = reactive({
+  type: "info",
+  text: "",
+});
 
 // Level data
 const levels = ref([]);
@@ -301,10 +357,15 @@ const selectedContentKind = ref(null); // null = both, 'grammar' or 'vocab'
 const availableToAdd = ref(0);
 const newInQueue = ref(0);
 const added = ref([]);
-const count = ref(5);
+const count = ref(1);
 const selectedKind = ref(null);
 
 const dueNow = computed(() => counts.state.dueNow || 0);
+const normalizedDailyLimit = computed(() => {
+  const parsed = Number(dailyLimit.value);
+  if (!Number.isFinite(parsed)) return 1;
+  return Math.min(50, Math.max(1, Math.round(parsed)));
+});
 
 const dailyOptions = [
   { value: 5, label: 'Relaxed' },
@@ -331,11 +392,45 @@ function getProgress(lvl) {
   return Math.round((lvl.in_queue / lvl.total_prompts) * 100);
 }
 
+function isLevelUnlocked(level) {
+  return selectedLevels.value.includes(level);
+}
+
+function levelActionLabel(lvl) {
+  if (addingLevelName.value === lvl.level || removingLevelName.value === lvl.level) return "...";
+  if (isLevelUnlocked(lvl.level)) return "Remove";
+  if (lvl.fully_added) return "Done";
+  return "Add";
+}
+
+function isLevelActionDisabled(lvl) {
+  return Boolean(
+    addingLevelName.value === lvl.level
+      || removingLevelName.value === lvl.level
+      || (lvl.fully_added && !isLevelUnlocked(lvl.level))
+  );
+}
+
 const totalSelectedPrompts = computed(() => {
   return levels.value
     .filter(l => selectedLevels.value.includes(l.level))
     .reduce((sum, l) => sum + l.total_prompts, 0);
 });
+
+function formatApiError(err, fallback) {
+  if (typeof err?.detail === "string") return err.detail;
+  if (typeof err?.detail?.detail === "string") return err.detail.detail;
+  return fallback;
+}
+
+function showFeedback(type, text) {
+  feedback.type = type;
+  feedback.text = text;
+}
+
+function clearFeedback() {
+  feedback.text = "";
+}
 
 function toggleLevel(level, totalPrompts) {
   if (totalPrompts === 0) return;
@@ -352,6 +447,13 @@ async function loadLevels() {
   const data = await apiFetch("/api/learn/levels");
   levels.value = data.levels;
   totalInQueue.value = data.total_in_queue;
+  if (data.preferences) {
+    dailyLimit.value = data.preferences.daily_new_limit || dailyLimit.value;
+    selectedLevels.value = data.preferences.selected_levels || [];
+    selectedContentKind.value = !data.preferences.content_preference || data.preferences.content_preference === "both"
+      ? null
+      : data.preferences.content_preference;
+  }
 }
 
 async function loadQueue() {
@@ -365,13 +467,14 @@ async function startLearning() {
   if (selectedLevels.value.length === 0) return;
   
   adding.value = true;
+  clearFeedback();
   try {
     // Save preferences to backend
     await apiFetch('/api/learn/preferences', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        daily_new_limit: dailyLimit.value,
+        daily_new_limit: normalizedDailyLimit.value,
         content_preference: selectedContentKind.value || 'both',
         selected_levels: selectedLevels.value,
       }),
@@ -387,11 +490,11 @@ async function startLearning() {
     if (result.added > 0) {
       router.push("/study");
     } else {
-      alert(result.message || 'No items available');
+      showFeedback("info", result.message || 'No items available');
     }
   } catch (err) {
     console.error('Failed to start learning:', err);
-    alert(err.detail || 'Failed to start learning');
+    showFeedback("error", formatApiError(err, 'Failed to start learning'));
   } finally {
     adding.value = false;
   }
@@ -399,25 +502,94 @@ async function startLearning() {
 
 async function addWholeLevel(level) {
   addingLevelName.value = level;
+  clearFeedback();
   try {
-    await apiFetch(`/api/learn/add-level/${level}`, { method: "POST" });
+    const kindParam = selectedContentKind.value ? `&kind=${selectedContentKind.value}` : '';
+    const tzOffset = new Date().getTimezoneOffset();
+    const result = await apiFetch(`/api/learn/add-level/${level}?limit=${normalizedDailyLimit.value}&tz_offset=${tzOffset}${kindParam}`, { method: "POST" });
     await loadLevels();
     await loadQueue();
     await counts.refresh();
+    if (result.added === 0 && result.message) {
+      showFeedback("info", result.message);
+    } else {
+      showFeedback("success", `${level} unlocked. ${result.added} new items are ready for study.`);
+    }
+  } catch (err) {
+    console.error('Failed to unlock level:', err);
+    showFeedback("error", formatApiError(err, 'Failed to unlock level'));
   } finally {
     addingLevelName.value = null;
+  }
+}
+
+async function removeWholeLevel(level) {
+  removingLevelName.value = level;
+  clearFeedback();
+  try {
+    const result = await apiFetch(`/api/learn/level/${level}`, { method: "DELETE" });
+    await loadLevels();
+    await loadQueue();
+    await counts.refresh();
+    showFeedback(
+      "success",
+      `${level} removed. ${result.removed_learning_items} unstudied ${result.removed_learning_items === 1 ? "item was" : "items were"} cleared.`
+    );
+  } catch (err) {
+    console.error('Failed to remove level:', err);
+    showFeedback("error", formatApiError(err, 'Failed to remove level'));
+  } finally {
+    removingLevelName.value = null;
+  }
+}
+
+async function toggleWholeLevel(lvl) {
+  if (isLevelUnlocked(lvl.level)) {
+    await removeWholeLevel(lvl.level);
+    return;
+  }
+  await addWholeLevel(lvl.level);
+}
+
+async function saveLearningPreferences() {
+  savingPreferences.value = true;
+  clearFeedback();
+  try {
+    dailyLimit.value = normalizedDailyLimit.value;
+    await apiFetch('/api/learn/preferences', {
+      method: 'POST',
+      body: JSON.stringify({
+        daily_new_limit: normalizedDailyLimit.value,
+        content_preference: selectedContentKind.value || 'both',
+        selected_levels: selectedLevels.value,
+      }),
+    });
+    showFeedback("success", "Daily learning preferences saved.");
+  } catch (err) {
+    console.error('Failed to save learning preferences:', err);
+    showFeedback("error", formatApiError(err, 'Failed to save learning preferences'));
+  } finally {
+    savingPreferences.value = false;
   }
 }
 
 async function learnNext() {
   learning.value = true;
   added.value = [];
+  clearFeedback();
   try {
     const kindParam = selectedKind.value ? `&kind=${selectedKind.value}` : '';
-    const data = await apiFetch(`/api/learn/next?count=${count.value}${kindParam}`, { method: "POST" });
+    const tzOffset = new Date().getTimezoneOffset();
+    const data = await apiFetch(`/api/learn/next?count=${count.value}&tz_offset=${tzOffset}${kindParam}`, { method: "POST" });
     added.value = data.added;
     await loadQueue();  // This updates availableToAdd and newInQueue
     await counts.refresh();
+    if (data.added.length === 0) {
+      showFeedback("info", "No more unlocked items are available right now.");
+    }
+  } catch (err) {
+    console.error('Failed to add more items:', err);
+    showFeedback("error", formatApiError(err, 'Failed to add more items'));
   } finally {
     learning.value = false;
   }
@@ -463,6 +635,58 @@ onMounted(async () => {
 .header-stats {
   display: flex;
   gap: 8px;
+}
+
+.feedback-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: var(--space-4);
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.feedback-banner.success {
+  border-color: rgba(52, 211, 153, 0.28);
+  background: var(--success-tint);
+  color: var(--text-primary);
+}
+
+.feedback-banner.error {
+  border-color: rgba(239, 68, 68, 0.28);
+  background: var(--error-tint);
+  color: var(--text-primary);
+}
+
+.feedback-dismiss {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: var(--transition-fast);
+}
+
+.feedback-dismiss:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+}
+
+.feedback-dismiss svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* Loading */
@@ -608,6 +832,17 @@ onMounted(async () => {
   gap: 10px;
 }
 
+.daily-limit-segments {
+  flex: 1;
+  min-width: 260px;
+}
+
+.daily-limit-segments .segment-btn {
+  min-width: 54px;
+  justify-content: center;
+  font-weight: 700;
+}
+
 .limit-option {
   display: flex;
   flex-direction: column;
@@ -654,6 +889,22 @@ onMounted(async () => {
   font-size: 12px;
   color: var(--text-muted);
   margin-top: 4px;
+}
+
+.custom-limit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+  max-width: 220px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.custom-limit.inline {
+  margin-top: 0;
+  width: 120px;
+  flex-shrink: 0;
 }
 
 /* Start section */
@@ -763,6 +1014,22 @@ onMounted(async () => {
   gap: 12px;
 }
 
+.daily-settings {
+  padding: var(--space-5);
+}
+
+.daily-settings .muted {
+  margin: 4px 0 0 0;
+  font-size: 13px;
+}
+
+.daily-settings-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
 .stat.clickable {
   cursor: pointer;
   transition: border-color 0.2s, background 0.2s;
@@ -796,24 +1063,36 @@ onMounted(async () => {
 /* Add more section - collapsible */
 .add-more-section {
   margin-top: 8px;
+  overflow: hidden;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition-base);
+}
+
+.add-more-section:hover {
+  border-color: rgba(99, 102, 241, 0.25);
+  box-shadow: var(--shadow-md);
 }
 
 .add-more-toggle {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-3) var(--space-4);
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
+  gap: var(--space-3);
+  padding: var(--space-5);
+  background: transparent;
+  border: 0;
   cursor: pointer;
-  font-size: 14px;
-  color: var(--text-muted);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
   transition: var(--transition-base);
 }
 
 .add-more-toggle:hover {
-  background: var(--bg-tertiary);
+  background: var(--bg-secondary);
 }
 
 .add-more-toggle::marker {
@@ -824,23 +1103,19 @@ onMounted(async () => {
   display: none;
 }
 
-.available-badge {
-  background: var(--accent);
-  color: white;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
 .add-more-content {
-  margin-top: 12px;
-  padding: 20px !important;
+  margin-top: 0;
+  padding: var(--space-4);
+  border: 0;
+  border-top: 1px solid var(--border-color);
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--bg-card);
 }
 
 .add-controls {
   display: flex;
-  gap: 24px;
+  gap: var(--space-4);
   align-items: flex-end;
   flex-wrap: wrap;
 }
@@ -917,13 +1192,30 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px var(--space-3);
-  background: var(--bg-primary);
-  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  background: var(--bg-secondary);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  transition: var(--transition-fast);
 }
 
 .mini-level.complete {
   opacity: 0.6;
+}
+
+.mini-level.unlocked {
+  border-color: rgba(99, 102, 241, 0.3);
+  background: var(--accent-tint);
+}
+
+.remove-level-btn {
+  color: var(--error);
+}
+
+.remove-level-btn:hover {
+  border-color: rgba(239, 68, 68, 0.35);
+  color: var(--error);
+  background: var(--error-tint);
 }
 
 .mini-level-info {
@@ -973,7 +1265,7 @@ onMounted(async () => {
   .daily-limit-options {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .study-prompt {
     flex-direction: column;
     text-align: center;
@@ -986,6 +1278,15 @@ onMounted(async () => {
   
   .stats-bar {
     flex-direction: column;
+  }
+
+  .daily-settings-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .custom-limit.inline {
+    width: 100%;
   }
   
   .add-controls {
