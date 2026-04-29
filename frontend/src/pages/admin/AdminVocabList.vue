@@ -20,6 +20,7 @@
     <div v-else-if="error" class="error-msg">{{ error }}</div>
 
     <div v-else class="admin-table-wrap">
+      <div v-if="actionError" class="error-msg" role="alert">{{ actionError }}</div>
       <table class="admin-table">
         <thead>
           <tr>
@@ -73,6 +74,7 @@ import { apiFetch } from "../../api";
 const items = ref([]);
 const loading = ref(true);
 const error = ref(null);
+const actionError = ref(null);
 const deleting = ref(null);
 const pendingDelete = ref(null);
 const search = ref("");
@@ -104,17 +106,21 @@ async function load() {
   }
 }
 
-function confirmDelete(vi) { pendingDelete.value = vi; }
+function confirmDelete(vi) {
+  actionError.value = null;
+  pendingDelete.value = vi;
+}
 
 async function doDelete() {
   const vi = pendingDelete.value;
   pendingDelete.value = null;
   deleting.value = vi.id;
+  actionError.value = null;
   try {
     await apiFetch(`/api/admin/vocab-items/${vi.id}`, { method: "DELETE" });
     items.value = items.value.filter(x => x.id !== vi.id);
   } catch (e) {
-    alert(e.detail?.detail || "Failed to delete");
+    actionError.value = e.detail?.detail || "Failed to delete";
   } finally {
     deleting.value = null;
   }

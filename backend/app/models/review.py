@@ -8,6 +8,7 @@ class ReviewState(Base):
     __tablename__ = "review_state"
     __table_args__ = (
         Index("ix_review_state_user_status_due", "user_id", "status", "due_at"),
+        Index("ix_review_state_user_introduced_local_date", "user_id", "introduced_local_date"),
     )
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
@@ -18,6 +19,8 @@ class ReviewState(Base):
     repetitions: Mapped[int]
     due_at: Mapped[object] = mapped_column(DateTime)
     last_reviewed_at: Mapped[object | None] = mapped_column(DateTime, nullable=True)
+    introduced_at: Mapped[object | None] = mapped_column(DateTime, nullable=True)
+    introduced_local_date: Mapped[object | None] = mapped_column(Date, nullable=True)
     status: Mapped[str] = mapped_column(String(32), default="reviewing")
 
     prompt = relationship("Prompt")

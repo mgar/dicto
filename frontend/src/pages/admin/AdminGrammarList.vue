@@ -12,6 +12,7 @@
     <div v-else-if="error" class="error-msg">{{ error }}</div>
 
     <div v-else class="admin-table-wrap">
+      <div v-if="actionError" class="error-msg" role="alert">{{ actionError }}</div>
       <table class="admin-table">
         <thead>
           <tr>
@@ -63,6 +64,7 @@ import { apiFetch } from "../../api";
 const items = ref([]);
 const loading = ref(true);
 const error = ref(null);
+const actionError = ref(null);
 const deleting = ref(null);
 const pendingDelete = ref(null);
 
@@ -80,6 +82,7 @@ async function load() {
 }
 
 function confirmDelete(gp) {
+  actionError.value = null;
   pendingDelete.value = gp;
 }
 
@@ -87,11 +90,12 @@ async function doDelete() {
   const gp = pendingDelete.value;
   pendingDelete.value = null;
   deleting.value = gp.id;
+  actionError.value = null;
   try {
     await apiFetch(`/api/admin/grammar-points/${gp.id}`, { method: "DELETE" });
     items.value = items.value.filter(x => x.id !== gp.id);
   } catch (e) {
-    alert(e.detail?.detail || "Failed to delete");
+    actionError.value = e.detail?.detail || "Failed to delete";
   } finally {
     deleting.value = null;
   }

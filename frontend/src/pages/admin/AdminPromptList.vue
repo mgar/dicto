@@ -21,6 +21,7 @@
     <div v-else-if="error" class="error-msg">{{ error }}</div>
 
     <div v-else class="admin-table-wrap">
+      <div v-if="actionError" class="error-msg" role="alert">{{ actionError }}</div>
       <table class="admin-table">
         <thead>
           <tr>
@@ -87,6 +88,7 @@ import Icon from "../../components/Icon.vue";
 const items = ref([]);
 const loading = ref(true);
 const error = ref(null);
+const actionError = ref(null);
 const deleting = ref(null);
 const pendingDelete = ref(null);
 const search = ref("");
@@ -119,17 +121,21 @@ async function load() {
   }
 }
 
-function confirmDelete(p) { pendingDelete.value = p; }
+function confirmDelete(p) {
+  actionError.value = null;
+  pendingDelete.value = p;
+}
 
 async function doDelete() {
   const p = pendingDelete.value;
   pendingDelete.value = null;
   deleting.value = p.id;
+  actionError.value = null;
   try {
     await apiFetch(`/api/admin/prompts/${p.id}`, { method: "DELETE" });
     items.value = items.value.filter(x => x.id !== p.id);
   } catch (e) {
-    alert(e.detail?.detail || "Failed to delete");
+    actionError.value = e.detail?.detail || "Failed to delete";
   } finally {
     deleting.value = null;
   }

@@ -110,9 +110,12 @@ CREATE TABLE IF NOT EXISTS review_state (
   repetitions INT NOT NULL,
   due_at DATETIME NOT NULL,
   last_reviewed_at DATETIME NULL,
+  introduced_at DATETIME NULL,
+  introduced_local_date DATE NULL,
   status VARCHAR(32) NOT NULL DEFAULT 'reviewing',
   PRIMARY KEY (user_id, prompt_id),
   INDEX idx_review_state_due (user_id, due_at),
+  INDEX idx_review_state_introduced_local_date (user_id, introduced_local_date),
   CONSTRAINT fk_review_state_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   CONSTRAINT fk_review_state_prompt FOREIGN KEY (prompt_id) REFERENCES prompts(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -134,4 +137,3 @@ CREATE TABLE IF NOT EXISTS review_log (
   CONSTRAINT fk_review_log_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   CONSTRAINT fk_review_log_prompt FOREIGN KEY (prompt_id) REFERENCES prompts(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
