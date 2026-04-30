@@ -166,11 +166,11 @@ onMounted(load);
 }
 .row-actions { display: flex; gap: 6px; justify-content: flex-end; }
 .btn.small { padding: 4px 10px; font-size: 12px; }
-.btn.danger { background: var(--error); color: #fff; border-color: var(--error); }
+.btn.danger { background: var(--error); color: var(--text-on-accent); border-color: var(--error); }
 .error-msg { color: var(--error); padding: 12px 0; }
 
 .confirm-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  position: fixed; inset: 0; background: var(--confirm-overlay);
   display: flex; align-items: center; justify-content: center; z-index: 100;
 }
 .confirm-dialog {

@@ -172,8 +172,8 @@ onMounted(load);
   display: inline-block; padding: 2px 7px; border-radius: 4px;
   font-size: 11px; font-weight: 600; text-transform: uppercase;
 }
-.kind-chip.grammar { background: rgba(96, 165, 250, 0.15); color: var(--accent); }
-.kind-chip.vocab { background: rgba(34, 197, 94, 0.15); color: var(--success); }
+.kind-chip.grammar { background: var(--blue-tint-strong); color: var(--accent); }
+.kind-chip.vocab { background: var(--green-tint); color: var(--success); }
 
 .sentence-cell { font-size: 13px; max-width: 300px; }
 :deep(.blank) { font-weight: 700; color: var(--accent); }
@@ -192,12 +192,12 @@ onMounted(load);
 
 .row-actions { display: flex; gap: 6px; justify-content: flex-end; }
 .btn.small { padding: 4px 10px; font-size: 12px; }
-.btn.danger { background: var(--error); color: #fff; border-color: var(--error); }
+.btn.danger { background: var(--error); color: var(--text-on-accent); border-color: var(--error); }
 .error-msg { color: var(--error); padding: 12px 0; }
 .mono { font-family: monospace; font-size: 13px; }
 
 .confirm-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  position: fixed; inset: 0; background: var(--confirm-overlay);
   display: flex; align-items: center; justify-content: center; z-index: 100;
 }
 .confirm-dialog {

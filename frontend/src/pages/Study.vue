@@ -259,7 +259,7 @@ onMounted(loadNewItems);
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #60a5fa, #a78bfa);
+  background: var(--blue-violet-gradient);
   transition: width 0.3s ease;
 }
 
@@ -410,9 +410,9 @@ onMounted(loadNewItems);
   font-size: 42px;
   font-weight: 700;
   margin: 0 0 8px;
-  background: linear-gradient(135deg, #a78bfa, #60a5fa);
+  background: var(--violet-blue-gradient);
   -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  -webkit-text-fill-color: var(--transparent);
   background-clip: text;
 }
 

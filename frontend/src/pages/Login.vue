@@ -161,8 +161,8 @@
   width: 52px;
   height: 52px;
   margin: 0 auto 16px;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.1));
-  border: 1px solid rgba(99, 102, 241, 0.25);
+  background: linear-gradient(135deg, var(--accent-tint), var(--violet-tint));
+  border: 1px solid var(--accent-border-subtle);
   border-radius: 14px;
   display: flex;
   align-items: center;
@@ -212,13 +212,13 @@
   padding: 12px 20px;
   font-size: 15px;
   border-radius: 11px;
-  background: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
+  background: var(--brand-gradient);
   margin-top: 6px;
-  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 16px var(--accent-border);
 }
 
 .login-submit:hover:not(:disabled) {
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+  box-shadow: 0 6px 20px var(--accent-border);
   transform: translateY(-1px);
 }
 

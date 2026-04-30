@@ -37,26 +37,26 @@ const label = computed(() => {
 }
 
 .type-badge.grammar {
-  background: rgba(99, 102, 241, 0.12);
-  color: #818cf8;
-  border: 1px solid rgba(99, 102, 241, 0.2);
+  background: var(--accent-tint);
+  color: var(--accent-light);
+  border: 1px solid var(--accent-border-subtle);
 }
 
 .type-badge.vocab {
-  background: rgba(167, 139, 250, 0.12);
-  color: #c4b5fd;
-  border: 1px solid rgba(167, 139, 250, 0.2);
+  background: var(--violet-tint);
+  color: var(--violet-light);
+  border: 1px solid var(--violet-glow);
 }
 
 [data-theme="light"] .type-badge.grammar {
-  color: #4f46e5;
-  background: rgba(99, 102, 241, 0.08);
-  border-color: rgba(99, 102, 241, 0.15);
+  color: var(--accent);
+  background: var(--accent-tint);
+  border-color: var(--accent-border-subtle);
 }
 
 [data-theme="light"] .type-badge.vocab {
-  color: #7c3aed;
-  background: rgba(124, 58, 237, 0.08);
-  border-color: rgba(124, 58, 237, 0.15);
+  color: var(--violet);
+  background: var(--violet-tint);
+  border-color: var(--violet-glow);
 }
 </style>

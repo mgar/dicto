@@ -659,13 +659,13 @@ onMounted(async () => {
 }
 
 .feedback-banner.success {
-  border-color: rgba(52, 211, 153, 0.28);
+  border-color: var(--success-border-strong);
   background: var(--success-tint);
   color: var(--text-primary);
 }
 
 .feedback-banner.error {
-  border-color: rgba(239, 68, 68, 0.28);
+  border-color: var(--error-border);
   background: var(--error-tint);
   color: var(--text-primary);
 }
@@ -678,7 +678,7 @@ onMounted(async () => {
   justify-content: center;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
-  background: transparent;
+  background: var(--transparent);
   color: var(--text-muted);
   cursor: pointer;
   flex-shrink: 0;
@@ -718,7 +718,7 @@ onMounted(async () => {
   width: 80px;
   height: 80px;
   margin: 0 auto 20px;
-  background: linear-gradient(135deg, var(--accent) 0%, #5b9cf6 100%);
+  background: var(--accent-blue-gradient);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -728,7 +728,7 @@ onMounted(async () => {
 .welcome-icon svg {
   width: 40px;
   height: 40px;
-  color: white;
+  color: var(--text-on-accent);
 }
 
 .welcome-card h3 {
@@ -799,7 +799,7 @@ onMounted(async () => {
 .level-check svg {
   width: 12px;
   height: 12px;
-  color: white;
+  color: var(--text-on-accent);
 }
 
 .level-card h5 {
@@ -966,8 +966,8 @@ onMounted(async () => {
   justify-content: space-between;
   gap: var(--space-5);
   padding: var(--space-5);
-  background: linear-gradient(135deg, rgba(96, 165, 250, 0.08), rgba(147, 51, 234, 0.07));
-  border: 1px solid rgba(96, 165, 250, 0.24);
+  background: linear-gradient(135deg, var(--blue-tint), var(--purple-tint));
+  border: 1px solid var(--blue-border);
   border-radius: var(--radius-lg);
 }
 
@@ -990,7 +990,7 @@ onMounted(async () => {
 .study-icon svg {
   width: 28px;
   height: 28px;
-  color: white;
+  color: var(--text-on-accent);
 }
 
 .study-text h3 {
@@ -1043,7 +1043,7 @@ onMounted(async () => {
 
 .stat.clickable:hover {
   border-color: var(--accent);
-  background: rgba(96, 165, 250, 0.05);
+  background: var(--accent-surface-subtle);
 }
 
 .stat-value {
@@ -1078,7 +1078,7 @@ onMounted(async () => {
 }
 
 .add-more-section:hover {
-  border-color: rgba(99, 102, 241, 0.25);
+  border-color: var(--accent-border-subtle);
   box-shadow: var(--shadow-md);
 }
 
@@ -1088,7 +1088,7 @@ onMounted(async () => {
   justify-content: space-between;
   gap: var(--space-3);
   padding: var(--space-5);
-  background: transparent;
+  background: var(--transparent);
   border: 0;
   cursor: pointer;
   font-size: 15px;
@@ -1156,13 +1156,13 @@ onMounted(async () => {
 }
 
 .item-type.grammar {
-  background: rgba(91, 156, 246, 0.15);
-  color: #60a5fa;
+  background: var(--blue-tint-strong);
+  color: var(--blue);
 }
 
 .item-type.vocab {
-  background: rgba(167, 139, 250, 0.15);
-  color: #a78bfa;
+  background: var(--violet-tint);
+  color: var(--violet);
 }
 
 .item-title {
@@ -1200,7 +1200,7 @@ onMounted(async () => {
   gap: 12px;
   padding: var(--space-3);
   background: var(--bg-secondary);
-  border: 1px solid transparent;
+  border: 1px solid var(--transparent);
   border-radius: var(--radius-md);
   transition: var(--transition-fast);
 }
@@ -1210,7 +1210,7 @@ onMounted(async () => {
 }
 
 .mini-level.unlocked {
-  border-color: rgba(99, 102, 241, 0.3);
+  border-color: var(--accent-border);
   background: var(--accent-tint);
 }
 
@@ -1219,7 +1219,7 @@ onMounted(async () => {
 }
 
 .remove-level-btn:hover {
-  border-color: rgba(239, 68, 68, 0.35);
+  border-color: var(--error-border);
   color: var(--error);
   background: var(--error-tint);
 }

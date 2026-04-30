@@ -215,6 +215,6 @@ textarea.form-input { resize: vertical; font-family: inherit; }
 .error-msg { color: var(--error); font-size: 14px; margin: 8px 0; }
 .form-actions { margin-top: 24px; }
 .btn.small { padding: 4px 10px; font-size: 12px; }
-.btn.danger { background: var(--error); color: #fff; border-color: var(--error); }
+.btn.danger { background: var(--error); color: var(--text-on-accent); border-color: var(--error); }
 code { font-family: monospace; background: var(--bg-tertiary); padding: 1px 4px; border-radius: 3px; }
 </style>

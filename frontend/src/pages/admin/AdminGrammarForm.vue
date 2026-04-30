@@ -267,5 +267,5 @@ textarea.form-input { resize: vertical; font-family: inherit; }
 .form-actions { margin-top: 24px; }
 
 .btn.small { padding: 4px 10px; font-size: 12px; }
-.btn.danger { background: var(--error); color: #fff; border-color: var(--error); }
+.btn.danger { background: var(--error); color: var(--text-on-accent); border-color: var(--error); }
 </style>

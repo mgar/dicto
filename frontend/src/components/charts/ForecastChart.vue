@@ -234,7 +234,7 @@ function formatBarLabel(isoDate) {
 }
 
 .bar-segment.projected {
-  border: 1px dashed rgba(255, 255, 255, 0.78);
+  border: 1px dashed var(--chart-projected-border);
   box-sizing: border-box;
   opacity: 0.82;
 }
@@ -243,8 +243,8 @@ function formatBarLabel(isoDate) {
   background:
     repeating-linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.34) 0 3px,
-      transparent 3px 7px
+      var(--chart-projected-stripe-vocab) 0 3px,
+      var(--transparent) 3px 7px
     ),
     var(--violet);
 }
@@ -253,8 +253,8 @@ function formatBarLabel(isoDate) {
   background:
     repeating-linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.3) 0 3px,
-      transparent 3px 7px
+      var(--chart-projected-stripe-grammar) 0 3px,
+      var(--transparent) 3px 7px
     ),
     var(--accent);
 }
@@ -268,7 +268,6 @@ function formatBarLabel(isoDate) {
 }
 
 .legend-dot.projected {
-  background: transparent;
   border: 1px dashed var(--text-muted);
   box-sizing: border-box;
 }

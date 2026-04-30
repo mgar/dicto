@@ -48,12 +48,12 @@ import Icon from "../components/Icon.vue";
   right: 0;
   width: 480px;
   height: 480px;
-  background: radial-gradient(ellipse at top right, rgba(99, 102, 241, 0.12) 0%, transparent 65%);
+  background: radial-gradient(ellipse at top right, var(--hero-glow) 0%, var(--transparent) 65%);
   pointer-events: none;
 }
 
 [data-theme="light"] .hero-card::before {
-  background: radial-gradient(ellipse at top right, rgba(99, 102, 241, 0.08) 0%, transparent 65%);
+  background: radial-gradient(ellipse at top right, var(--hero-glow) 0%, var(--transparent) 65%);
 }
 
 .hero-eyebrow {
@@ -84,9 +84,9 @@ h1 {
 }
 
 .hero-accent {
-  background: linear-gradient(135deg, #818cf8 0%, #c084fc 100%);
+  background: var(--accent-purple-gradient);
   -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  -webkit-text-fill-color: var(--transparent);
   background-clip: text;
 }
 
