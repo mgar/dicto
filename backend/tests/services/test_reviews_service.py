@@ -66,6 +66,37 @@ class TestReviewsService:
         ).scalar_one()
         assert log_count == 1
 
+    def test_submit_review_answer_uses_time_zone_for_dst(self, db_session, monkeypatch):
+        user = make_user(db_session, email="svc-submit-dst@dicto.es", password="pw")
+        grammar_point = make_grammar_point(db_session, slug="submit-dst-gp")
+        prompt = make_prompt(db_session, grammar_point=grammar_point, sentence="Ella ___ de Madrid.", answers=("es",))
+        state = make_review_state(
+            db_session,
+            user,
+            prompt,
+            due_at=datetime(2026, 3, 7, 18, 0),
+            interval_days=0,
+            repetitions=0,
+        )
+        monkeypatch.setattr(
+            reviews_service,
+            "now_utc",
+            lambda: datetime(2026, 3, 7, 18, 0, tzinfo=UTC),
+        )
+
+        reviews_service.submit_review_answer(
+            db_session,
+            user,
+            prompt.id,
+            "es",
+            local_date="2026-03-07",
+            tz_offset=480,
+            time_zone="America/Los_Angeles",
+        )
+
+        db_session.refresh(state)
+        assert state.due_at == datetime(2026, 3, 8, 11, 0)
+
     def test_submit_review_answer_requires_state(self, db_session):
         user = make_user(db_session, email="svc-submit-missing@dicto.es", password="pw")
         with pytest.raises(ServiceError) as exc:

@@ -182,7 +182,7 @@
 
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue";
-import { apiFetch } from "../api";
+import { apiFetch, localDateString, timezonePayload } from "../api";
 import { useCounts } from "../counts";
 import TypeBadge from "../components/badges/TypeBadge.vue";
 import Icon from "../components/Icon.vue";
@@ -310,14 +310,16 @@ async function submit() {
   submitting.value = true;
   submittedAnswer.value = answer.value;
   try {
-    // Include local date and tz_offset for timezone-aware scheduling
+    // Include local date and timezone data for timezone-aware scheduling
     // Use local date parts (not toISOString which returns UTC)
     const now = new Date();
-    const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    const tzOffset = now.getTimezoneOffset();
     const data = await apiFetch(`/api/reviews/${current.value.prompt_id}/answer`, {
       method: "POST",
-      body: JSON.stringify({ user_answer: answer.value, local_date: localDate, tz_offset: tzOffset })
+      body: JSON.stringify({
+        user_answer: answer.value,
+        local_date: localDateString(now),
+        ...timezonePayload(now),
+      })
     });
     const isFirstAttempt = !seenOnce.has(current.value.prompt_id);
     seenOnce.add(current.value.prompt_id);

@@ -68,7 +68,7 @@
 
 <script setup>
 import { computed, onMounted, ref } from "vue";
-import { apiFetch } from "../api";
+import { apiFetch, localDateString, timezoneQuery } from "../api";
 import { useCounts } from "../counts";
 import Icon from "../components/Icon.vue";
 import ForecastChart from "../components/charts/ForecastChart.vue";
@@ -130,8 +130,7 @@ async function refreshAll() {
   try {
     // Try to auto-add new items if user has preferences set
     try {
-      const tzOffset = new Date().getTimezoneOffset();
-      await apiFetch(`/api/learn/auto-add?tz_offset=${tzOffset}`, { method: 'POST' });
+      await apiFetch(`/api/learn/auto-add?${timezoneQuery()}`, { method: 'POST' });
     } catch (err) {
       // Silently fail if no preferences set or user has unstudied items
       // This is expected behavior
@@ -139,11 +138,13 @@ async function refreshAll() {
     
     // Pass local date to handle timezone differences
     const now = new Date();
-    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    const tzOffset = now.getTimezoneOffset();  // minutes behind UTC (e.g. -60 for CET)
+    const today = localDateString(now);
+    const timezoneParams = timezoneQuery(now);
     const [f, a, m] = await Promise.all([
-      apiFetch(`/api/stats/forecast?days=${forecastDays}&start_date=${today}&tz_offset=${tzOffset}`),
-      apiFetch(`/api/stats/activity?days=${activityDays}&end_date=${today}`),
+      apiFetch(
+        `/api/stats/forecast?days=${forecastDays}&start_date=${today}&${timezoneParams}`
+      ),
+      apiFetch(`/api/stats/activity?days=${activityDays}&end_date=${today}&${timezoneParams}`),
       apiFetch(`/api/stats/mastery-overview?kind=${masteryKind.value}`),
     ]);
     forecast.value = f.items;

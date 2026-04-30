@@ -1,14 +1,14 @@
 """Learning queue, study flow, preferences, auto-add."""
 import json
-from datetime import datetime, time, timedelta, timezone
 
 from sqlalchemy import and_, delete, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.dependencies import now_utc
 from app.models import GrammarExample, GrammarPoint, Prompt, ReviewState, User, VocabItem
-from app.schemas.learn import LearnNextOut, MarkStudiedIn, PreferencesIn
+from app.schemas.learn import LearnNextOut, PreferencesIn
 from app.services.errors import ServiceError
+from app.timezone_utils import local_date_from_utc
 from app.utils import prompt_to_dict
 
 CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"]
@@ -275,6 +275,7 @@ def learn_next(
     count: int,
     kind: str | None,
     tz_offset: int | None = None,
+    time_zone: str | None = None,
 ) -> dict:
     if count < 1:
         raise ServiceError(400, "count must be >= 1")
@@ -302,10 +303,9 @@ def learn_next(
     stmt = stmt.order_by(Prompt.id.asc()).limit(count)
 
     rows = db_session.execute(stmt).all()
-    due_now = now_utc().replace(tzinfo=None)
-    offset_minutes = -(tz_offset or 0)
-    user_tz = timezone(timedelta(minutes=offset_minutes))
-    local_today = datetime.now(user_tz).date()
+    now = now_utc()
+    due_now = now.replace(tzinfo=None)
+    local_today = local_date_from_utc(now, tz_offset, time_zone)
 
     added_items = []
     for (prompt, grammar_point, vocab_item) in rows:
@@ -334,7 +334,13 @@ def learn_next(
     return LearnNextOut(added=added_items, remaining=remaining).model_dump()
 
 
-def learn_add_grammar_point(db_session: Session, user: User, grammar_point_id: int) -> dict:
+def learn_add_grammar_point(
+    db_session: Session,
+    user: User,
+    grammar_point_id: int,
+    tz_offset: int | None = None,
+    time_zone: str | None = None,
+) -> dict:
     grammar_point = db_session.execute(
         select(GrammarPoint).where(GrammarPoint.id == grammar_point_id)
     ).scalar_one_or_none()
@@ -355,11 +361,13 @@ def learn_add_grammar_point(db_session: Session, user: User, grammar_point_id: i
         )
     )
     prompts = db_session.execute(stmt).scalars().all()
-    due_now = now_utc().replace(tzinfo=None)
+    now = now_utc()
+    due_now = now.replace(tzinfo=None)
+    local_today = local_date_from_utc(now, tz_offset, time_zone)
 
     added_count = 0
     for prompt in prompts:
-        db_session.add(_new_learning_state(user.id, prompt.id, due_now, due_now.date()))
+        db_session.add(_new_learning_state(user.id, prompt.id, due_now, local_today))
         added_count += 1
 
     db_session.commit()
@@ -370,7 +378,13 @@ def learn_add_grammar_point(db_session: Session, user: User, grammar_point_id: i
     }
 
 
-def learn_add_vocab_item(db_session: Session, user: User, vocab_item_id: int) -> dict:
+def learn_add_vocab_item(
+    db_session: Session,
+    user: User,
+    vocab_item_id: int,
+    tz_offset: int | None = None,
+    time_zone: str | None = None,
+) -> dict:
     vocab_item = db_session.execute(select(VocabItem).where(VocabItem.id == vocab_item_id)).scalar_one_or_none()
     if not vocab_item:
         raise ServiceError(404, "Vocab item not found")
@@ -389,11 +403,13 @@ def learn_add_vocab_item(db_session: Session, user: User, vocab_item_id: int) ->
         )
     )
     prompts = db_session.execute(stmt).scalars().all()
-    due_now = now_utc().replace(tzinfo=None)
+    now = now_utc()
+    due_now = now.replace(tzinfo=None)
+    local_today = local_date_from_utc(now, tz_offset, time_zone)
 
     added_count = 0
     for prompt in prompts:
-        db_session.add(_new_learning_state(user.id, prompt.id, due_now, due_now.date()))
+        db_session.add(_new_learning_state(user.id, prompt.id, due_now, local_today))
         added_count += 1
 
     db_session.commit()
@@ -407,6 +423,7 @@ def learn_add_level(
     kind: str | None,
     limit: int | None,
     tz_offset: int | None = None,
+    time_zone: str | None = None,
 ) -> dict:
     if level.upper() not in CEFR_LEVELS:
         raise ServiceError(400, f"Invalid level. Must be one of: {', '.join(CEFR_LEVELS)}")
@@ -424,7 +441,7 @@ def learn_add_level(
     _add_selected_level(user, level)
     db_session.commit()
 
-    result = auto_add_items(db_session, user, tz_offset)
+    result = auto_add_items(db_session, user, tz_offset, time_zone)
     result.update({
         "level": level,
         "kind": None if user.content_preference == "both" else user.content_preference,
@@ -557,15 +574,8 @@ def get_study_queue(db_session: Session, user: User) -> dict:
     return {"items": items}
 
 
-def mark_items_studied(db_session: Session, user: User, payload: MarkStudiedIn | None) -> dict:
-    if payload and payload.local_date:
-        try:
-            local_today = datetime.fromisoformat(payload.local_date).date()
-            due_at = datetime.combine(local_today, time(0, 0, 0))
-        except ValueError:
-            due_at = now_utc().replace(tzinfo=None)
-    else:
-        due_at = now_utc().replace(tzinfo=None)
+def mark_items_studied(db_session: Session, user: User) -> dict:
+    due_at = now_utc().replace(tzinfo=None)
 
     stmt = select(ReviewState).where(
         and_(
@@ -600,16 +610,20 @@ def save_preferences(db_session: Session, user: User, prefs: PreferencesIn) -> d
     return {"message": "Preferences saved successfully"}
 
 
-def auto_add_items(db_session: Session, user: User, tz_offset: int | None) -> dict:
+def auto_add_items(
+    db_session: Session,
+    user: User,
+    tz_offset: int | None,
+    time_zone: str | None = None,
+) -> dict:
     if not user.daily_new_limit or not user.selected_levels:
         raise ServiceError(
             400,
             "No learning preferences set. Please configure your daily goal first.",
         )
 
-    offset_minutes = -(tz_offset or 0)
-    user_tz = timezone(timedelta(minutes=offset_minutes))
-    local_today = datetime.now(user_tz).date()
+    now = now_utc()
+    local_today = local_date_from_utc(now, tz_offset, time_zone)
 
     unstudied_count = db_session.execute(
         select(func.count())
@@ -633,8 +647,11 @@ def auto_add_items(db_session: Session, user: User, tz_offset: int | None) -> di
     today_count = _introduced_today_count(db_session, user, local_today)
 
     if user.last_items_added_at and today_count == 0:
-        last_added_utc = user.last_items_added_at.replace(tzinfo=timezone.utc)
-        last_added_local = last_added_utc.astimezone(user_tz).date()
+        last_added_local = local_date_from_utc(
+            user.last_items_added_at,
+            tz_offset,
+            time_zone,
+        )
         if last_added_local >= local_today:
             return {
                 "added": 0,
@@ -691,14 +708,14 @@ def auto_add_items(db_session: Session, user: User, tz_offset: int | None) -> di
     else:
         prompts = _select_unseen_prompts(db_session, user, levels, remaining_today, kind=kind)
 
-    due_now = now_utc().replace(tzinfo=None)
+    due_now = now.replace(tzinfo=None)
     added_count = 0
     for prompt in prompts:
         db_session.add(_new_learning_state(user.id, prompt.id, due_now, local_today))
         added_count += 1
 
     if added_count > 0:
-        user.last_items_added_at = now_utc().replace(tzinfo=None)
+        user.last_items_added_at = due_now
 
     db_session.commit()
 

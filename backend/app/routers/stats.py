@@ -30,12 +30,20 @@ def stats_forecast(
     days: int = 14,
     start_date: str | None = None,
     tz_offset: int | None = None,
+    time_zone: str | None = None,
     db_session: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
     """Get forecast of upcoming reviews."""
     try:
-        return stats_service.stats_forecast(db_session, user, days, start_date, tz_offset)
+        return stats_service.stats_forecast(
+            db_session,
+            user,
+            days,
+            start_date,
+            tz_offset,
+            time_zone,
+        )
     except ServiceError as err:
         raise_http(err)
 
@@ -44,11 +52,20 @@ def stats_forecast(
 def stats_activity(
     days: int = 30,
     end_date: str | None = None,
+    tz_offset: int | None = None,
+    time_zone: str | None = None,
     db_session: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
     """Get activity history."""
     try:
-        return stats_service.stats_activity(db_session, user, days, end_date)
+        return stats_service.stats_activity(
+            db_session,
+            user,
+            days,
+            end_date,
+            tz_offset,
+            time_zone,
+        )
     except ServiceError as err:
         raise_http(err)

@@ -99,7 +99,7 @@
 
 <script setup>
 import { onMounted, ref, reactive } from "vue";
-import { apiFetch } from "../api";
+import { apiFetch, timezoneQuery } from "../api";
 import { useCounts } from "../counts";
 import LevelBadge from "../components/badges/LevelBadge.vue";
 import Icon from "../components/Icon.vue";
@@ -169,9 +169,13 @@ async function startLearning() {
   
   adding.value = true;
   try {
+    const timezoneParams = timezoneQuery();
     // Add all selected grammar points
     for (const gpId of selectedGrammarPoints.value) {
-      await apiFetch(`/api/learn/add-grammar-point/${gpId}`, { method: "POST" });
+      await apiFetch(
+        `/api/learn/add-grammar-point/${gpId}?${timezoneParams}`,
+        { method: "POST" }
+      );
     }
     
     // Clear selection

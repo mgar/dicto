@@ -324,7 +324,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { apiFetch } from "../api";
+import { apiFetch, timezoneQuery } from "../api";
 import { useCounts } from "../counts";
 import LevelBadge from "../components/badges/LevelBadge.vue";
 import Icon from "../components/Icon.vue";
@@ -481,8 +481,10 @@ async function startLearning() {
     });
     
     // Auto-add first batch of items
-    const tzOffset = new Date().getTimezoneOffset();
-    const result = await apiFetch(`/api/learn/auto-add?tz_offset=${tzOffset}`, { method: 'POST' });
+    const result = await apiFetch(
+      `/api/learn/auto-add?${timezoneQuery()}`,
+      { method: 'POST' }
+    );
     
     await counts.refresh();
     
@@ -505,8 +507,10 @@ async function addWholeLevel(level) {
   clearFeedback();
   try {
     const kindParam = selectedContentKind.value ? `&kind=${selectedContentKind.value}` : '';
-    const tzOffset = new Date().getTimezoneOffset();
-    const result = await apiFetch(`/api/learn/add-level/${level}?limit=${normalizedDailyLimit.value}&tz_offset=${tzOffset}${kindParam}`, { method: "POST" });
+    const result = await apiFetch(
+      `/api/learn/add-level/${level}?limit=${normalizedDailyLimit.value}&${timezoneQuery()}${kindParam}`,
+      { method: "POST" }
+    );
     await loadLevels();
     await loadQueue();
     await counts.refresh();
@@ -579,8 +583,10 @@ async function learnNext() {
   clearFeedback();
   try {
     const kindParam = selectedKind.value ? `&kind=${selectedKind.value}` : '';
-    const tzOffset = new Date().getTimezoneOffset();
-    const data = await apiFetch(`/api/learn/next?count=${count.value}&tz_offset=${tzOffset}${kindParam}`, { method: "POST" });
+    const data = await apiFetch(
+      `/api/learn/next?count=${count.value}&${timezoneQuery()}${kindParam}`,
+      { method: "POST" }
+    );
     added.value = data.added;
     await loadQueue();  // This updates availableToAdd and newInQueue
     await counts.refresh();
