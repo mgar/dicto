@@ -1,12 +1,12 @@
 """
 Learning queue routes.
 """
-from fastapi import APIRouter, Body, Depends
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_current_user, get_db
 from app.models import User
-from app.schemas import MarkStudiedIn, PreferencesIn
+from app.schemas import PreferencesIn
 from app.services import learn_service
 from app.services.errors import ServiceError, raise_http
 
@@ -48,12 +48,20 @@ def learn_next(
     count: int = 5,
     kind: str | None = None,
     tz_offset: int | None = None,
+    time_zone: str | None = None,
     db_session: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
     """Adds the next N unseen prompts to review_state with due_at=now."""
     try:
-        return learn_service.learn_next(db_session, user, count, kind, tz_offset)
+        return learn_service.learn_next(
+            db_session,
+            user,
+            count,
+            kind,
+            tz_offset,
+            time_zone,
+        )
     except ServiceError as err:
         raise_http(err)
 
@@ -61,12 +69,20 @@ def learn_next(
 @router.post("/add-grammar-point/{grammar_point_id}")
 def learn_add_grammar_point(
     grammar_point_id: int,
+    tz_offset: int | None = None,
+    time_zone: str | None = None,
     db_session: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
     """Adds all prompts from a specific grammar point to the user's learning queue."""
     try:
-        return learn_service.learn_add_grammar_point(db_session, user, grammar_point_id)
+        return learn_service.learn_add_grammar_point(
+            db_session,
+            user,
+            grammar_point_id,
+            tz_offset,
+            time_zone,
+        )
     except ServiceError as err:
         raise_http(err)
 
@@ -74,12 +90,20 @@ def learn_add_grammar_point(
 @router.post("/add-vocab-item/{vocab_item_id}")
 def learn_add_vocab_item(
     vocab_item_id: int,
+    tz_offset: int | None = None,
+    time_zone: str | None = None,
     db_session: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
     """Adds all prompts from a specific vocab item to the user's learning queue."""
     try:
-        return learn_service.learn_add_vocab_item(db_session, user, vocab_item_id)
+        return learn_service.learn_add_vocab_item(
+            db_session,
+            user,
+            vocab_item_id,
+            tz_offset,
+            time_zone,
+        )
     except ServiceError as err:
         raise_http(err)
 
@@ -90,12 +114,21 @@ def learn_add_level(
     kind: str | None = None,
     limit: int | None = None,
     tz_offset: int | None = None,
+    time_zone: str | None = None,
     db_session: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
     """Adds prompts from a CEFR level to the learning queue."""
     try:
-        return learn_service.learn_add_level(db_session, user, level, kind, limit, tz_offset)
+        return learn_service.learn_add_level(
+            db_session,
+            user,
+            level,
+            kind,
+            limit,
+            tz_offset,
+            time_zone,
+        )
     except ServiceError as err:
         raise_http(err)
 
@@ -124,12 +157,11 @@ def get_study_queue(
 
 @router.post("/mark-studied")
 def mark_items_studied(
-    payload: MarkStudiedIn | None = Body(default=None),
     db_session: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
     """Mark all items with status='learning' as ready for review."""
-    return learn_service.mark_items_studied(db_session, user, payload)
+    return learn_service.mark_items_studied(db_session, user)
 
 
 @router.post("/preferences")
@@ -148,11 +180,12 @@ def save_preferences(
 @router.post("/auto-add")
 def auto_add_items(
     tz_offset: int | None = None,
+    time_zone: str | None = None,
     db_session: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
     """Automatically add new items based on user's saved preferences."""
     try:
-        return learn_service.auto_add_items(db_session, user, tz_offset)
+        return learn_service.auto_add_items(db_session, user, tz_offset, time_zone)
     except ServiceError as err:
         raise_http(err)

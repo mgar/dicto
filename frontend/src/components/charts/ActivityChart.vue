@@ -6,10 +6,22 @@
         <p class="chart-subtitle">Your review history</p>
       </div>
       <div class="chart-controls">
-        <button class="icon-btn" @click="$emit('shift', -14)" :disabled="!canShiftBack" title="View older">
+        <button
+          class="icon-btn"
+          :disabled="!canShiftBack"
+          title="View older"
+          aria-label="View older activity"
+          @click="$emit('shift', -14)"
+        >
           <Icon name="chevron-left" />
         </button>
-        <button class="icon-btn" @click="$emit('shift', 14)" :disabled="!canShiftForward" title="View newer">
+        <button
+          class="icon-btn"
+          :disabled="!canShiftForward"
+          title="View newer"
+          aria-label="View newer activity"
+          @click="$emit('shift', 14)"
+        >
           <Icon name="chevron-right" />
         </button>
       </div>
@@ -130,15 +142,15 @@ function formatActivityLabel(isoDate) {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 .activity-dot.vocab {
-  background: #a78bfa;
+  background: var(--violet);
 }
 
 .activity-dot.grammar {
-  background: #6366f1;
+  background: var(--accent);
 }
 
 .activity-dot.active {

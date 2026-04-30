@@ -1,4 +1,4 @@
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 
 import pytest
 
@@ -33,6 +33,86 @@ class TestStatsService:
             stats_service.stats_forecast(db_session, user, days=0, start_date=None, tz_offset=0)
         with pytest.raises(ServiceError):
             stats_service.stats_activity(db_session, user, days=0, end_date=None)
+
+    def test_stats_forecast_returns_scheduled_reviews(self, db_session):
+        user = make_user(db_session, email="svc-stats-forecast@dicto.es", password="pw")
+        grammar_point = make_grammar_point(db_session, slug="forecast-gp")
+        grammar_prompt = make_prompt(db_session, grammar_point=grammar_point, answers=("es",))
+        vocab = make_vocab_item(db_session, level="A1", word="agua")
+        vocab_prompt = make_prompt(
+            db_session,
+            kind="vocab",
+            sentence="Bebo ___.",
+            vocab_item=vocab,
+            answers=("agua",),
+        )
+        start_day = date(2026, 4, 29)
+
+        make_review_state(
+            db_session,
+            user,
+            grammar_prompt,
+            due_at=datetime.combine(start_day - timedelta(days=1), datetime.min.time()),
+        )
+        make_review_state(
+            db_session,
+            user,
+            vocab_prompt,
+            due_at=datetime.combine(start_day + timedelta(days=2), datetime.min.time()),
+        )
+
+        service_output = stats_service.stats_forecast(
+            db_session,
+            user,
+            days=4,
+            start_date=start_day.isoformat(),
+            tz_offset=0,
+        )
+
+        assert service_output["items"][0]["due"] == 1
+        assert service_output["items"][0]["grammar_due"] == 1
+        assert service_output["items"][2]["due"] == 1
+        assert service_output["items"][2]["vocab_due"] == 1
+
+    def test_stats_forecast_projects_future_daily_batches(self, db_session):
+        user = make_user(db_session, email="svc-stats-projected@dicto.es", password="pw")
+        user.daily_new_limit = 3
+        user.content_preference = "both"
+        user.selected_levels = "A1"
+
+        for idx in range(2):
+            grammar_point = make_grammar_point(
+                db_session,
+                level="A1",
+                slug=f"project-gp-{idx}",
+            )
+            make_prompt(db_session, grammar_point=grammar_point, answers=("es",))
+
+        for idx in range(2):
+            vocab = make_vocab_item(db_session, level="A1", word=f"palabra-{idx}")
+            make_prompt(
+                db_session,
+                kind="vocab",
+                sentence=f"Uso ___ {idx}.",
+                vocab_item=vocab,
+                answers=(f"palabra-{idx}",),
+            )
+
+        db_session.commit()
+        service_output = stats_service.stats_forecast(
+            db_session,
+            user,
+            days=8,
+            start_date=date(2026, 4, 29).isoformat(),
+            tz_offset=0,
+        )
+
+        assert service_output["items"][0]["projected_due"] == 3
+        assert service_output["items"][0]["projected_grammar_due"] == 2
+        assert service_output["items"][0]["projected_vocab_due"] == 1
+        assert service_output["items"][1]["projected_due"] == 4
+        assert service_output["items"][1]["projected_vocab_due"] == 2
+        assert service_output["items"][7]["projected_due"] == 3
 
     def test_stats_activity_returns_daily_series(self, db_session):
         user = make_user(db_session, email="svc-stats-activity@dicto.es", password="pw")

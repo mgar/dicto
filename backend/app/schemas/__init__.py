@@ -5,7 +5,7 @@ from app.schemas.admin import (
     VocabItemIn,
 )
 from app.schemas.auth import GoogleSignInRequest, LoginRequest, UserOut
-from app.schemas.learn import LearnNextOut, MarkStudiedIn, PreferencesIn
+from app.schemas.learn import LearnNextOut, PreferencesIn
 from app.schemas.reviews import SubmitAnswerIn
 
 __all__ = [
@@ -14,7 +14,6 @@ __all__ = [
     "GrammarPointIn",
     "LearnNextOut",
     "LoginRequest",
-    "MarkStudiedIn",
     "PreferencesIn",
     "PromptIn",
     "SubmitAnswerIn",

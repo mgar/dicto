@@ -1,11 +1,11 @@
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 import pytest
 from sqlalchemy import select
 
 from app.models import ReviewState
 from app.dependencies import now_utc
-from app.schemas.learn import MarkStudiedIn, PreferencesIn
+from app.schemas.learn import PreferencesIn
 from app.services import learn_service
 from app.services.errors import ServiceError
 from tests.conftest import make_grammar_point, make_prompt, make_user, make_vocab_item
@@ -30,17 +30,15 @@ class TestLearnService:
         assert len(service_output["added"]) == 1
         assert service_output["remaining"] == 1
 
-    def test_mark_items_studied_transitions_to_reviewing(self, db_session):
+    def test_mark_items_studied_transitions_to_reviewing(self, db_session, monkeypatch):
         user = make_user(db_session, email="svc-learn-mark@dicto.es", password="pw")
         grammar_point = make_grammar_point(db_session, slug="mark-studied")
         prompt = make_prompt(db_session, grammar_point=grammar_point, answers=("es",))
         make_review_state(db_session, user, prompt, status="learning")
+        fixed_now = datetime(2026, 4, 29, 15, 30, tzinfo=UTC)
+        monkeypatch.setattr(learn_service, "now_utc", lambda: fixed_now)
 
-        service_output = learn_service.mark_items_studied(
-            db_session,
-            user,
-            MarkStudiedIn(local_date=date.today().isoformat()),
-        )
+        service_output = learn_service.mark_items_studied(db_session, user)
         assert service_output["marked"] == 1
 
         state = db_session.execute(
@@ -50,6 +48,33 @@ class TestLearnService:
             )
         ).scalar_one()
         assert state.status == "reviewing"
+        assert state.due_at == fixed_now.replace(tzinfo=None)
+
+    def test_add_specific_item_uses_user_local_date(self, db_session, monkeypatch):
+        user = make_user(db_session, email="svc-learn-add-local@dicto.es", password="pw")
+        grammar_point = make_grammar_point(db_session, slug="add-local-date")
+        prompt = make_prompt(db_session, grammar_point=grammar_point, answers=("es",))
+        monkeypatch.setattr(
+            learn_service,
+            "now_utc",
+            lambda: datetime(2026, 4, 29, 15, 30, tzinfo=UTC),
+        )
+
+        service_output = learn_service.learn_add_grammar_point(
+            db_session,
+            user,
+            grammar_point.id,
+            tz_offset=-600,
+        )
+
+        assert service_output["added"] == 1
+        state = db_session.execute(
+            select(ReviewState).where(
+                ReviewState.user_id == user.id,
+                ReviewState.prompt_id == prompt.id,
+            )
+        ).scalar_one()
+        assert state.introduced_local_date == date(2026, 4, 30)
 
     def test_save_preferences_validation_and_success(self, db_session):
         user = make_user(db_session, email="svc-pref@dicto.es", password="pw")

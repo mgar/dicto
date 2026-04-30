@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.dependencies import now_utc
 from app.models import GrammarPoint, Prompt, PromptAnswer, ReviewLog, ReviewState, User, VocabItem
 from app.services.errors import ServiceError
+from app.timezone_utils import local_date_from_utc, local_datetime_to_utc_naive
 from app.utils import grade_cloze, prompt_to_dict, sm2_update
 
 
@@ -58,9 +59,15 @@ def submit_review_answer(
     user_answer: str,
     local_date: str | None,
     tz_offset: int | None,
+    time_zone: str | None = None,
 ) -> dict:
     review_state = db_session.execute(
-        select(ReviewState).where(and_(ReviewState.user_id == user.id, ReviewState.prompt_id == prompt_id))
+        select(ReviewState).where(
+            and_(
+                ReviewState.user_id == user.id,
+                ReviewState.prompt_id == prompt_id,
+            )
+        )
     ).scalar_one_or_none()
     if not review_state:
         raise ServiceError(404, "No review state for this prompt")
@@ -90,14 +97,12 @@ def submit_review_answer(
         try:
             local_today = datetime.fromisoformat(local_date).date()
         except ValueError:
-            local_today = answered_at.date()
+            local_today = local_date_from_utc(answered_at, tz_offset, time_zone)
     else:
-        local_today = answered_at.date()
+        local_today = local_date_from_utc(answered_at, tz_offset, time_zone)
 
-    offset_minutes = -(tz_offset or 0)
     due_date = local_today + timedelta(days=interval)
-    local_4am_utc = datetime.combine(due_date, time(4, 0, 0)) - timedelta(minutes=offset_minutes)
-    due_at = local_4am_utc
+    due_at = local_datetime_to_utc_naive(due_date, time(4, 0, 0), tz_offset, time_zone)
 
     min_due = answered_at + timedelta(hours=1)
     if due_at < min_due:

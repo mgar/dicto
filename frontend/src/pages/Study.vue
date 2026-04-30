@@ -220,12 +220,8 @@ async function next() {
   if (isLastItem.value) {
     // Mark items as "seen" and go to review
     try {
-      // Send local date so items show as due "today" in forecast
-      const now = new Date();
-      const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       await apiFetch("/api/learn/mark-studied", { 
-        method: "POST",
-        body: JSON.stringify({ local_date: localDate })
+        method: "POST"
       });
       await counts.refresh();
     } catch (e) {

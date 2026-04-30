@@ -1,57 +1,84 @@
 <template>
   <div class="card chart-card">
     <div class="chart-header">
-    <div>
-      <h3>Forecast</h3>
-      <p class="chart-subtitle">Upcoming scheduled reviews</p>
-    </div>
+      <div>
+        <h3>Forecast</h3>
+        <p class="chart-subtitle">Scheduled and projected reviews</p>
+      </div>
       <div class="chart-controls">
-        <button class="icon-btn" @click="$emit('shift', -7)" :disabled="!canShiftBack">
+        <button
+          class="icon-btn"
+          :disabled="!canShiftBack"
+          title="View older"
+          aria-label="View older forecast"
+          @click="$emit('shift', -7)"
+        >
           <Icon name="chevron-left" />
         </button>
-        <button class="icon-btn" @click="$emit('shift', 7)">
+        <button
+          class="icon-btn"
+          title="View newer"
+          aria-label="View newer forecast"
+          @click="$emit('shift', 7)"
+        >
           <Icon name="chevron-right" />
         </button>
       </div>
     </div>
-    
+
     <div class="legend">
       <span class="legend-item"><span class="legend-dot vocab"></span> Vocab</span>
       <span class="legend-item"><span class="legend-dot grammar"></span> Grammar</span>
+      <span v-if="hasProjectedReviews" class="legend-item">
+        <span class="legend-dot projected"></span> Projected
+      </span>
     </div>
 
     <div v-if="loading" class="chart-loading">Loading…</div>
-    
+
     <div v-else class="bar-chart">
-      <div 
-        v-for="(item, idx) in dataWithProjections" 
-        :key="item.date" 
+      <div
+        v-for="item in chartItems"
+        :key="item.date"
         class="bar-group"
       >
         <div class="bar-container">
-          <!-- Show value -->
-          <span v-if="item.total > 0" class="bar-value">
+          <span
+            v-if="item.total > 0"
+            class="bar-value"
+            :title="`Scheduled: ${item.scheduledTotal}, projected: ${item.projectedTotal}`"
+          >
             {{ item.total }}
           </span>
-          
-          <!-- Scheduled reviews -->
-          <div 
+
+          <div
             v-if="item.total > 0"
             class="bar-stack"
             :style="{ height: Math.max(getBarHeight(item.total), 4) + '%' }"
           >
             <div
-              class="bar-segment vocab"
-              :style="{ flex: item.vocab_due || 0 }"
+              v-if="item.projectedVocab > 0"
+              class="bar-segment vocab projected"
+              :style="{ flex: item.projectedVocab }"
             ></div>
             <div
+              v-if="item.projectedGrammar > 0"
+              class="bar-segment grammar projected"
+              :style="{ flex: item.projectedGrammar }"
+            ></div>
+            <div
+              v-if="item.scheduledVocab > 0"
+              class="bar-segment vocab"
+              :style="{ flex: item.scheduledVocab }"
+            ></div>
+            <div
+              v-if="item.scheduledGrammar > 0"
               class="bar-segment grammar"
-              :style="{ flex: item.grammar_due || 1 }"
+              :style="{ flex: item.scheduledGrammar }"
             ></div>
           </div>
-          
-          <!-- Empty state -->
-          <div 
+
+          <div
             v-if="item.total === 0"
             class="bar-stack empty"
             :style="{ height: '4%' }"
@@ -85,23 +112,37 @@ const props = defineProps({
 
 defineEmits(['shift']);
 
-// Simple data mapping - just show scheduled reviews
-const dataWithProjections = computed(() => {
+const chartItems = computed(() => {
   if (!props.data.length) return [];
 
   return props.data.map((item) => {
-    const total = (item.vocab_due || 0) + (item.grammar_due || 0);
-    
+    const scheduledGrammar = item.grammar_due || 0;
+    const scheduledVocab = item.vocab_due || 0;
+    const projectedGrammar = item.projected_grammar_due || 0;
+    const projectedVocab = item.projected_vocab_due || 0;
+    const scheduledTotal = item.due ?? scheduledGrammar + scheduledVocab;
+    const projectedTotal = item.projected_due ?? projectedGrammar + projectedVocab;
+
     return {
       ...item,
-      total,
+      scheduledGrammar,
+      scheduledVocab,
+      projectedGrammar,
+      projectedVocab,
+      scheduledTotal,
+      projectedTotal,
+      total: scheduledTotal + projectedTotal,
     };
   });
 });
 
+const hasProjectedReviews = computed(() => {
+  return chartItems.value.some(item => item.projectedTotal > 0);
+});
+
 const maxValue = computed(() => {
   const max = Math.max(
-    ...dataWithProjections.value.map(i => i.total || 0),
+    ...chartItems.value.map(i => i.total || 0),
     1
   );
   return Math.ceil(max / 10) * 10 || 10;
@@ -117,12 +158,12 @@ function formatBarLabel(isoDate) {
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
-  
+
   const dateOnly = new Date(isoDate + "T00:00:00");
-  
+
   if (dateOnly.getTime() === today.getTime()) return "Today";
   if (dateOnly.getTime() === tomorrow.getTime()) return "Tomorrow";
-  
+
   return d.toLocaleDateString(undefined, { day: "numeric", weekday: "short" });
 }
 </script>
@@ -160,7 +201,7 @@ function formatBarLabel(isoDate) {
   font-weight: 600;
   color: var(--text-muted);
   margin-bottom: 3px;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 
 .bar-stack {
@@ -185,11 +226,37 @@ function formatBarLabel(isoDate) {
 }
 
 .bar-segment.vocab {
-  background: #a78bfa;
+  background: var(--violet);
 }
 
 .bar-segment.grammar {
-  background: #6366f1;
+  background: var(--accent);
+}
+
+.bar-segment.projected {
+  border: 1px dashed rgba(255, 255, 255, 0.78);
+  box-sizing: border-box;
+  opacity: 0.82;
+}
+
+.bar-segment.projected.vocab {
+  background:
+    repeating-linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.34) 0 3px,
+      transparent 3px 7px
+    ),
+    var(--violet);
+}
+
+.bar-segment.projected.grammar {
+  background:
+    repeating-linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.3) 0 3px,
+      transparent 3px 7px
+    ),
+    var(--accent);
 }
 
 .bar-label {
@@ -198,5 +265,11 @@ function formatBarLabel(isoDate) {
   text-align: center;
   white-space: nowrap;
   font-weight: 500;
+}
+
+.legend-dot.projected {
+  background: transparent;
+  border: 1px dashed var(--text-muted);
+  box-sizing: border-box;
 }
 </style>
