@@ -26,7 +26,7 @@ defineProps({
   font-weight: 700;
   padding: 3px 8px;
   border-radius: 6px;
-  color: white;
+  color: var(--text-on-accent);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -37,10 +37,10 @@ defineProps({
 }
 
 /* Level colors - indigo to violet spectrum */
-.level-badge.a1 { background: linear-gradient(135deg, #6366f1, #818cf8); }
-.level-badge.a2 { background: linear-gradient(135deg, #7c3aed, #8b5cf6); }
-.level-badge.b1 { background: linear-gradient(135deg, #8b5cf6, #a78bfa); }
-.level-badge.b2 { background: linear-gradient(135deg, #9333ea, #c084fc); }
-.level-badge.c1 { background: linear-gradient(135deg, #a855f7, #d946ef); }
-.level-badge.c2 { background: linear-gradient(135deg, #c026d3, #ec4899); }
+.level-badge.a1 { background: linear-gradient(135deg, var(--level-a1-start), var(--level-a1-end)); }
+.level-badge.a2 { background: linear-gradient(135deg, var(--level-a2-start), var(--level-a2-end)); }
+.level-badge.b1 { background: linear-gradient(135deg, var(--level-b1-start), var(--level-b1-end)); }
+.level-badge.b2 { background: linear-gradient(135deg, var(--level-b2-start), var(--level-b2-end)); }
+.level-badge.c1 { background: linear-gradient(135deg, var(--level-c1-start), var(--level-c1-end)); }
+.level-badge.c2 { background: linear-gradient(135deg, var(--level-c2-start), var(--level-c2-end)); }
 </style>

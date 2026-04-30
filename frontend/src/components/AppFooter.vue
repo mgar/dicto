@@ -18,7 +18,7 @@ const year = new Date().getFullYear();
 .footer {
 	margin-top: 20px;
 	border-top: 1px solid var(--border-subtle);
-	background: transparent;
+	background: var(--transparent);
 }
 
 .footer-inner {
@@ -34,9 +34,9 @@ const year = new Date().getFullYear();
 .brand {
 	font-weight: 700;
 	font-size: 13px;
-	background: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%);
+	background: var(--accent-violet-gradient);
 	-webkit-background-clip: text;
-	-webkit-text-fill-color: transparent;
+	-webkit-text-fill-color: var(--transparent);
 	background-clip: text;
 	letter-spacing: -0.4px;
 }

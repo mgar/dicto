@@ -170,7 +170,7 @@ function formatActivityLabel(isoDate) {
 .activity-count {
   font-size: 8.5px;
   font-weight: 700;
-  color: white;
+  color: var(--text-on-accent);
 }
 
 .activity-label {

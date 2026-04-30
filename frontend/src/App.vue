@@ -38,17 +38,58 @@ const showFooter = computed(() => route.path !== "/review");
   --text-primary: #f0f4ff;
   --text-secondary: #c8d3e8;
   --text-muted: #7a8ba8;
+  --text-on-accent: #ffffff;
+  --transparent: transparent;
   --accent: #6366f1;
   --accent-light: #818cf8;
   --accent-hover: #4f52e0;
   --accent-glow: rgba(99, 102, 241, 0.25);
+  --accent-border: rgba(99, 102, 241, 0.35);
+  --accent-border-subtle: rgba(99, 102, 241, 0.25);
+  --accent-surface-subtle: rgba(99, 102, 241, 0.05);
   --violet: #a78bfa;
+  --violet-light: #c4b5fd;
   --violet-glow: rgba(167, 139, 250, 0.2);
+  --violet-border: rgba(167, 139, 250, 0.5);
   --error: #f87171;
+  --error-strong: #ef4444;
+  --error-hover: #dc2626;
   --success: #34d399;
+  --success-strong: #10b981;
   --success-glow: rgba(52, 211, 153, 0.2);
+  --success-border: rgba(52, 211, 153, 0.25);
+  --success-border-strong: rgba(52, 211, 153, 0.28);
+  --success-surface: rgba(52, 211, 153, 0.08);
+  --warning: #fbbf24;
+  --warning-hover: #d97706;
+  --warning-border: rgba(251, 191, 36, 0.4);
+  --warning-border-strong: rgba(251, 191, 36, 0.5);
+  --warning-surface: rgba(251, 191, 36, 0.07);
+  --warning-fill: rgba(251, 191, 36, 0.3);
+  --warning-glow: rgba(251, 191, 36, 0.5);
+  --blue: #60a5fa;
+  --blue-alt: #5b9cf6;
+  --blue-tint: rgba(96, 165, 250, 0.08);
+  --blue-tint-strong: rgba(96, 165, 250, 0.15);
+  --blue-border: rgba(96, 165, 250, 0.24);
+  --purple: #8b5cf6;
+  --purple-deep: #7c3aed;
+  --purple-vivid: #9333ea;
+  --purple-bright: #a855f7;
+  --purple-soft: #c084fc;
+  --purple-pink: #d946ef;
+  --pink: #ec4899;
+  --purple-tint: rgba(147, 51, 234, 0.07);
+  --green-tint: rgba(34, 197, 94, 0.15);
   --gradient-start: #141d35;
   --gradient-end: #080d17;
+  --brand-gradient: linear-gradient(135deg, var(--accent) 0%, var(--purple) 100%);
+  --accent-blue-gradient: linear-gradient(135deg, var(--accent) 0%, var(--blue-alt) 100%);
+  --accent-violet-gradient: linear-gradient(135deg, var(--accent-light) 0%, var(--violet) 100%);
+  --accent-purple-gradient: linear-gradient(135deg, var(--accent-light) 0%, var(--purple-soft) 100%);
+  --blue-violet-gradient: linear-gradient(90deg, var(--blue), var(--violet));
+  --violet-blue-gradient: linear-gradient(135deg, var(--violet), var(--blue));
+  --review-progress-gradient: linear-gradient(90deg, var(--accent), var(--purple));
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4), 0 1px 4px rgba(0, 0, 0, 0.3);
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -56,7 +97,56 @@ const showFooter = computed(() => route.path !== "/review");
   --accent-tint: rgba(99, 102, 241, 0.15);
   --violet-tint: rgba(167, 139, 250, 0.15);
   --error-tint: rgba(239, 68, 68, 0.08);
+  --error-tint-strong: rgba(239, 68, 68, 0.12);
+  --error-border: rgba(239, 68, 68, 0.28);
+  --error-border-strong: rgba(239, 68, 68, 0.4);
   --success-tint: rgba(52, 211, 153, 0.12);
+  --modal-overlay: rgba(0, 0, 0, 0.55);
+  --confirm-overlay: rgba(0, 0, 0, 0.5);
+  --nav-bg: rgba(8, 13, 23, 0.82);
+  --nav-border: rgba(255, 255, 255, 0.05);
+  --nav-hover-bg: rgba(255, 255, 255, 0.07);
+  --nav-logo-hover-bg: rgba(255, 255, 255, 0.05);
+  --nav-active-bg: rgba(99, 102, 241, 0.14);
+  --nav-avatar-ring: rgba(99, 102, 241, 0.5);
+  --chart-projected-border: rgba(255, 255, 255, 0.78);
+  --chart-projected-stripe-vocab: rgba(255, 255, 255, 0.34);
+  --chart-projected-stripe-grammar: rgba(255, 255, 255, 0.3);
+  --hero-glow: rgba(99, 102, 241, 0.12);
+  --body-accent-glow: rgba(99, 102, 241, 0.1);
+  --body-violet-glow: rgba(167, 139, 250, 0.05);
+  --level-a1-start: #6366f1;
+  --level-a1-end: #818cf8;
+  --level-a2-start: #7c3aed;
+  --level-a2-end: #8b5cf6;
+  --level-b1-start: #8b5cf6;
+  --level-b1-end: #a78bfa;
+  --level-b2-start: #9333ea;
+  --level-b2-end: #c084fc;
+  --level-c1-start: #a855f7;
+  --level-c1-end: #d946ef;
+  --level-c2-start: #c026d3;
+  --level-c2-end: #ec4899;
+  --tier-foundations-bg: rgba(99, 102, 241, 0.1);
+  --tier-foundations-border: rgba(99, 102, 241, 0.25);
+  --tier-foundations-text: #a5b4fc;
+  --tier-foundations-shadow: rgba(99, 102, 241, 0.15);
+  --tier-builder-bg: rgba(124, 58, 237, 0.12);
+  --tier-builder-border: rgba(124, 58, 237, 0.28);
+  --tier-builder-text: #c4b5fd;
+  --tier-builder-shadow: rgba(124, 58, 237, 0.15);
+  --tier-communicator-bg: rgba(139, 92, 246, 0.12);
+  --tier-communicator-border: rgba(139, 92, 246, 0.3);
+  --tier-communicator-text: #d8b4fe;
+  --tier-communicator-shadow: rgba(139, 92, 246, 0.15);
+  --tier-fluent-bg: rgba(168, 85, 247, 0.14);
+  --tier-fluent-border: rgba(168, 85, 247, 0.32);
+  --tier-fluent-text: #e9d5ff;
+  --tier-fluent-shadow: rgba(168, 85, 247, 0.15);
+  --tier-mastery-bg: rgba(192, 132, 252, 0.16);
+  --tier-mastery-border: rgba(192, 132, 252, 0.35);
+  --tier-mastery-text: #f3e8ff;
+  --tier-mastery-shadow: rgba(192, 132, 252, 0.2);
   --radius-sm: var(--radius-1);
   --radius-md: var(--radius-2);
   --radius-lg: var(--radius-3);
@@ -84,15 +174,19 @@ const showFooter = computed(() => route.path !== "/review");
   --text-primary: #0d1117;
   --text-secondary: #2d3a4a;
   --text-muted: #64748b;
+  --text-on-accent: #ffffff;
   --accent: #6366f1;
   --accent-light: #818cf8;
   --accent-hover: #4f52e0;
   --accent-glow: rgba(99, 102, 241, 0.12);
+  --accent-border-subtle: rgba(99, 102, 241, 0.15);
   --violet: #7c3aed;
   --violet-glow: rgba(124, 58, 237, 0.12);
   --error: #ef4444;
   --success: #10b981;
   --success-glow: rgba(16, 185, 129, 0.12);
+  --success-border: rgba(16, 185, 129, 0.25);
+  --success-surface: rgba(16, 185, 129, 0.08);
   --gradient-start: #eef1fd;
   --gradient-end: #f4f6fb;
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
@@ -103,6 +197,18 @@ const showFooter = computed(() => route.path !== "/review");
   --violet-tint: rgba(124, 58, 237, 0.1);
   --error-tint: rgba(239, 68, 68, 0.06);
   --success-tint: rgba(16, 185, 129, 0.08);
+  --nav-bg: rgba(244, 246, 251, 0.88);
+  --nav-border: rgba(0, 0, 0, 0.05);
+  --nav-hover-bg: rgba(0, 0, 0, 0.05);
+  --nav-logo-hover-bg: rgba(0, 0, 0, 0.04);
+  --nav-active-bg: rgba(99, 102, 241, 0.1);
+  --hero-glow: rgba(99, 102, 241, 0.08);
+  --body-accent-glow: rgba(99, 102, 241, 0.06);
+  --tier-foundations-text: #4f46e5;
+  --tier-builder-text: #6d28d9;
+  --tier-communicator-text: #5b21b6;
+  --tier-fluent-text: #7c3aed;
+  --tier-mastery-text: #6d28d9;
 }
 
 html {
@@ -137,14 +243,14 @@ body {
 /* Rich background gradient */
 [data-theme="dark"] body {
   background: 
-    radial-gradient(ellipse 100% 60% at 50% -10%, rgba(99, 102, 241, 0.1) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(167, 139, 250, 0.05) 0%, transparent 50%),
+    radial-gradient(ellipse 100% 60% at 50% -10%, var(--body-accent-glow) 0%, var(--transparent) 60%),
+    radial-gradient(ellipse 60% 40% at 80% 80%, var(--body-violet-glow) 0%, var(--transparent) 50%),
     var(--bg-primary);
 }
 
 [data-theme="light"] body {
   background: 
-    radial-gradient(ellipse 100% 60% at 50% -10%, rgba(99, 102, 241, 0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 100% 60% at 50% -10%, var(--body-accent-glow) 0%, var(--transparent) 60%),
     var(--bg-primary);
 }
 
@@ -172,19 +278,19 @@ a {
 }
 
 .card:hover {
-  border-color: rgba(99, 102, 241, 0.25);
+  border-color: var(--accent-border-subtle);
   box-shadow: var(--shadow-md);
 }
 
 [data-theme="light"] .card:hover {
-  border-color: rgba(99, 102, 241, 0.15);
+  border-color: var(--accent-border-subtle);
   box-shadow: var(--shadow-md);
 }
 
 .btn {
   background: var(--accent);
   border: 0;
-  color: white;
+  color: var(--text-on-accent);
   padding: 10px 16px;
   border-radius: var(--radius-md);
   cursor: pointer;
@@ -210,14 +316,14 @@ a {
 }
 
 .btn.secondary {
-  background: transparent;
+  background: var(--transparent);
   border: 1px solid var(--border-color);
   color: var(--text-secondary);
 }
 
 .btn.secondary:hover {
   background: var(--bg-tertiary);
-  border-color: rgba(99, 102, 241, 0.4);
+  border-color: var(--accent-border);
   color: var(--text-primary);
   box-shadow: none;
 }
@@ -241,11 +347,11 @@ a {
 }
 
 [data-theme="light"] .btn.secondary {
-  border-color: rgba(0, 0, 0, 0.12);
+  border-color: var(--border-color);
 }
 
 [data-theme="light"] .btn.secondary:hover {
-  border-color: rgba(99, 102, 241, 0.3);
+  border-color: var(--accent-border);
   background: var(--bg-tertiary);
 }
 
@@ -299,7 +405,7 @@ a {
 
 .ghost-btn {
   border: 1px solid var(--border-color);
-  background: transparent;
+  background: var(--transparent);
   color: var(--text-muted);
   cursor: pointer;
   font-family: inherit;
@@ -307,7 +413,7 @@ a {
 }
 
 .ghost-btn:hover {
-  border-color: rgba(99, 102, 241, 0.35);
+  border-color: var(--accent-border);
   color: var(--text-secondary);
   background: var(--bg-tertiary);
 }
@@ -365,7 +471,7 @@ a {
 .segmented .segment-btn.active {
   background: var(--accent);
   border-color: var(--accent);
-  color: white;
+  color: var(--text-on-accent);
 }
 
 .stepper {
@@ -395,7 +501,7 @@ a {
 .stepper .stepper-btn:hover {
   background: var(--accent);
   border-color: var(--accent);
-  color: white;
+  color: var(--text-on-accent);
 }
 
 .stepper .stepper-input {
@@ -523,7 +629,7 @@ kbd {
   font-weight: 700;
   padding: 4px 10px;
   background: var(--accent);
-  color: white;
+  color: var(--text-on-accent);
   border-radius: 999px;
 }
 
@@ -548,12 +654,12 @@ kbd {
 }
 
 .btn.danger {
-  background: rgba(239, 68, 68, 0.9);
-  color: white;
+  background: var(--error-strong);
+  color: var(--text-on-accent);
 }
 
 .btn.danger:hover {
-  background: #dc2626;
+  background: var(--error-hover);
   box-shadow: 0 4px 14px var(--error-tint);
 }
 
@@ -584,7 +690,7 @@ kbd {
   border-radius: 999px;
   background: var(--accent-tint);
   color: var(--accent);
-  border: 1px solid rgba(99, 102, 241, 0.35);
+  border: 1px solid var(--accent-border);
   padding: 4px 10px;
   font-size: 12px;
   font-weight: 700;
@@ -772,7 +878,7 @@ kbd {
   height: 32px;
   border-radius: 8px;
   border: 2px solid var(--border-color);
-  background: transparent;
+  background: var(--transparent);
   color: var(--text-muted);
   cursor: pointer;
   display: flex;
@@ -783,13 +889,13 @@ kbd {
 
 .checkbox-btn:hover {
   border-color: var(--accent);
-  background: rgba(99, 102, 241, 0.05);
+  background: var(--accent-surface-subtle);
 }
 
 .checkbox-btn.selected {
   border-color: var(--accent);
   background: var(--accent);
-  color: white;
+  color: var(--text-on-accent);
 }
 
 .checkbox-btn svg {
@@ -803,7 +909,7 @@ kbd {
   border-radius: 8px;
   border: 2px solid var(--violet);
   color: var(--violet);
-  background: rgba(167, 139, 250, 0.1);
+  background: var(--violet-tint);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -875,7 +981,7 @@ kbd {
   height: 30px;
   border-radius: 8px;
   border: 1px solid var(--border-color);
-  background: transparent;
+  background: var(--transparent);
   color: var(--text-muted);
   cursor: pointer;
   display: flex;
@@ -887,7 +993,7 @@ kbd {
 .icon-btn:hover:not(:disabled) {
   background: var(--bg-tertiary);
   color: var(--text-primary);
-  border-color: rgba(99, 102, 241, 0.4);
+  border-color: var(--accent-border);
 }
 
 .icon-btn:disabled {

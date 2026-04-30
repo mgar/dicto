@@ -415,7 +415,7 @@ onUnmounted(() => {
   height: 72px;
   margin: 0 auto 20px;
   background: var(--success-glow);
-  border: 1px solid rgba(52, 211, 153, 0.25);
+  border: 1px solid var(--success-border);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -471,7 +471,7 @@ onUnmounted(() => {
 
 .empty-icon {
   background: var(--success-glow);
-  border: 1px solid rgba(52, 211, 153, 0.25);
+  border: 1px solid var(--success-border);
 }
 
 .empty-icon svg {
@@ -496,7 +496,7 @@ onUnmounted(() => {
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent), #8b5cf6);
+  background: var(--review-progress-gradient);
   transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   border-radius: 2px;
 }
@@ -522,16 +522,16 @@ onUnmounted(() => {
 }
 
 .end-session-btn:hover {
-  border-color: rgba(239, 68, 68, 0.4);
-  color: #f87171;
-  background: rgba(239, 68, 68, 0.06);
+  border-color: var(--error-border-strong);
+  color: var(--error);
+  background: var(--error-tint);
 }
 
 /* Confirmation modal */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--modal-overlay);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
@@ -719,7 +719,7 @@ onUnmounted(() => {
 
 .answer-input {
   flex: 1;
-  background: transparent;
+  background: var(--transparent);
   border: none;
   color: var(--text-primary);
   font-size: 16px;
@@ -771,13 +771,13 @@ onUnmounted(() => {
 }
 
 .result-card.correct {
-  background: rgba(52, 211, 153, 0.08);
-  border: 1px solid rgba(52, 211, 153, 0.25);
+  background: var(--success-surface);
+  border: 1px solid var(--success-border);
 }
 
 .result-card.incorrect {
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.25);
+  background: var(--error-tint);
+  border: 1px solid var(--error-border);
 }
 
 .result-icon {
@@ -796,8 +796,8 @@ onUnmounted(() => {
 }
 
 .result-card.incorrect .result-icon {
-  background: rgba(239, 68, 68, 0.12);
-  color: #f87171;
+  background: var(--error-tint-strong);
+  color: var(--error);
 }
 
 .result-icon svg {
@@ -822,7 +822,7 @@ onUnmounted(() => {
 }
 
 .result-card.incorrect .result-title {
-  color: #f87171;
+  color: var(--error);
 }
 
 .accent-note {
@@ -848,7 +848,7 @@ onUnmounted(() => {
 }
 
 .your-answer .wrong {
-  color: #f87171;
+  color: var(--error);
   text-decoration: line-through;
 }
 
@@ -875,15 +875,15 @@ onUnmounted(() => {
 }
 
 .hint-toggle:hover {
-  border-color: rgba(251, 191, 36, 0.4);
+  border-color: var(--warning-border);
   color: var(--text-secondary);
   background: var(--bg-tertiary);
 }
 
 .hint-toggle.active {
-  border-color: rgba(251, 191, 36, 0.5);
-  color: #fbbf24;
-  background: rgba(251, 191, 36, 0.07);
+  border-color: var(--warning-border-strong);
+  color: var(--warning);
+  background: var(--warning-surface);
 }
 
 .lightbulb-icon {
@@ -893,8 +893,8 @@ onUnmounted(() => {
 }
 
 .hint-toggle.active .lightbulb-icon {
-  fill: rgba(251, 191, 36, 0.3);
-  filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.5));
+  fill: var(--warning-fill);
+  filter: drop-shadow(0 0 4px var(--warning-glow));
 }
 
 .hint-label {

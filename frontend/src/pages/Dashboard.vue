@@ -201,7 +201,7 @@ onMounted(refreshAll);
   border-radius: inherit;
   opacity: 0;
   transition: var(--transition-base);
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.04), transparent);
+  background: linear-gradient(135deg, var(--accent-surface-subtle), var(--transparent));
 }
 
 .action-card:hover {
@@ -214,19 +214,19 @@ onMounted(refreshAll);
 }
 
 .action-card.learn {
-  border-left: 3px solid #a78bfa;
+  border-left: 3px solid var(--violet);
 }
 
 .action-card.learn:hover {
-  border-color: #a78bfa;
-  border-left-color: #a78bfa;
+  border-color: var(--violet);
+  border-left-color: var(--violet);
   box-shadow: 0 8px 24px var(--violet-glow);
 }
 
 /* Highlighted state for Learn card */
 .action-card.learn.highlighted {
-  background: linear-gradient(135deg, rgba(167, 139, 250, 0.08), rgba(99, 102, 241, 0.03));
-  border: 2px solid rgba(167, 139, 250, 0.5);
+  background: linear-gradient(135deg, var(--violet-tint), var(--accent-surface-subtle));
+  border: 2px solid var(--violet-border);
   border-left-width: 4px;
 }
 
@@ -242,15 +242,15 @@ onMounted(refreshAll);
   display: flex;
   align-items: center;
   gap: 4px;
-  background: linear-gradient(135deg, #8b5cf6, #6366f1);
-  color: white;
+  background: var(--brand-gradient);
+  color: var(--text-on-accent);
   font-size: 11px;
   font-weight: 700;
   padding: 4px 10px;
   border-radius: 99px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
+  box-shadow: 0 2px 8px var(--accent-border);
 }
 
 .start-here-badge svg {
@@ -294,6 +294,6 @@ onMounted(refreshAll);
 }
 
 .action-card.learn .action-badge {
-  color: #c4b5fd;
+  color: var(--violet-light);
 }
 </style>

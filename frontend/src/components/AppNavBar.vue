@@ -139,16 +139,16 @@ watch(
 .nav {
   position: sticky;
   top: 0;
-  background: rgba(8, 13, 23, 0.82);
+  background: var(--nav-bg);
   backdrop-filter: blur(16px) saturate(180%);
   -webkit-backdrop-filter: blur(16px) saturate(180%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--nav-border);
   z-index: 100;
 }
 
 [data-theme="light"] .nav {
-  background: rgba(244, 246, 251, 0.88);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  background: var(--nav-bg);
+  border-bottom: 1px solid var(--nav-border);
 }
 
 .nav-inner {
@@ -171,25 +171,25 @@ watch(
 }
 
 .logo:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--nav-logo-hover-bg);
 }
 
 [data-theme="light"] .logo:hover {
-  background: rgba(0, 0, 0, 0.04);
+  background: var(--nav-logo-hover-bg);
 }
 
 .logo-icon {
   width: 20px;
   height: 20px;
-  color: #a78bfa;
+  color: var(--violet);
 }
 
 .logo-text {
   font-weight: 800;
   font-size: 19px;
-  background: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%);
+  background: var(--accent-violet-gradient);
   -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  -webkit-text-fill-color: var(--transparent);
   background-clip: text;
   letter-spacing: -0.6px;
 }
@@ -217,21 +217,21 @@ watch(
 }
 
 .link:hover {
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--nav-hover-bg);
   color: var(--text-primary);
 }
 
 [data-theme="light"] .link:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--nav-hover-bg);
 }
 
 .link.router-link-active {
-  background: rgba(99, 102, 241, 0.14);
+  background: var(--nav-active-bg);
   color: var(--accent-light);
 }
 
 [data-theme="light"] .link.router-link-active {
-  background: rgba(99, 102, 241, 0.1);
+  background: var(--nav-active-bg);
   color: var(--accent);
 }
 
@@ -289,12 +289,12 @@ watch(
 }
 
 .learn-badge {
-  background: rgba(167, 139, 250, 0.2);
-  color: #c4b5fd;
+  background: var(--violet-glow);
+  color: var(--violet-light);
 }
 
 .review-badge {
-  background: rgba(99, 102, 241, 0.2);
+  background: var(--accent-tint);
   color: var(--accent-light);
 }
 
@@ -309,19 +309,19 @@ watch(
 }
 
 [data-theme="light"] .theme-toggle {
-  border-color: rgba(0, 0, 0, 0.07);
+  border-color: var(--border-color);
 }
 
 .theme-toggle:hover {
-  background: rgba(255, 255, 255, 0.07);
-  color: #fbbf24;
-  border-color: rgba(251, 191, 36, 0.3);
+  background: var(--nav-hover-bg);
+  color: var(--warning);
+  border-color: var(--warning-fill);
 }
 
 [data-theme="light"] .theme-toggle:hover {
-  background: rgba(0, 0, 0, 0.05);
-  color: #d97706;
-  border-color: rgba(217, 119, 6, 0.25);
+  background: var(--nav-hover-bg);
+  color: var(--warning-hover);
+  border-color: var(--warning-fill);
 }
 
 .icon {
@@ -340,7 +340,7 @@ watch(
   align-items: center;
   padding: 0;
   border: none;
-  background: transparent;
+  background: var(--transparent);
   cursor: pointer;
 }
 
@@ -348,8 +348,8 @@ watch(
   width: 34px;
   height: 34px;
   border-radius: 9px;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  color: white;
+  background: var(--brand-gradient);
+  color: var(--text-on-accent);
   font-weight: 700;
   font-size: 13px;
   display: flex;
@@ -361,7 +361,7 @@ watch(
 
 .user-btn:hover .avatar {
   transform: scale(1.06);
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.5), 0 4px 12px rgba(99, 102, 241, 0.25);
+  box-shadow: 0 0 0 2px var(--nav-avatar-ring), 0 4px 12px var(--accent-border-subtle);
 }
 
 /* Dropdown menu */
@@ -408,7 +408,7 @@ watch(
   gap: 10px;
   width: 100%;
   padding: 11px 16px;
-  background: transparent;
+  background: var(--transparent);
   border: none;
   color: var(--text-secondary);
   font-size: 13.5px;
@@ -419,8 +419,8 @@ watch(
 }
 
 .menu-item:hover {
-  background: rgba(239, 68, 68, 0.08);
-  color: #f87171;
+  background: var(--error-tint);
+  color: var(--error);
 }
 
 .menu-item svg {
@@ -443,14 +443,14 @@ watch(
 
 /* Login button */
 .login-btn {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  background: var(--brand-gradient);
   padding: 9px 18px;
   border-radius: 9px;
   font-size: 13.5px;
 }
 
 .login-btn:hover {
-  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 4px 16px var(--accent-border);
 }
 
 /* Mobile adjustments */
