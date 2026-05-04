@@ -92,7 +92,7 @@
                   }"
                 >
                   <span v-if="result" class="final-answer">
-                    {{ result.correct ? submittedAnswer : result.expected_answer }}
+                    {{ result.correct && !resultNeedsRetry ? submittedAnswer : result.expected_answer }}
                   </span>
                   <span v-else-if="answer" class="live-input">{{ answer }}</span>
                   <span v-else class="placeholder">______</span>
@@ -133,11 +133,14 @@
             </div>
             <div class="result-content">
               <div class="result-title">
-                {{ result.correct ? 'Correct!' : 'Not quite' }}
+                {{ resultNeedsRetry ? 'Accent needed' : result.correct ? 'Correct!' : 'Not quite' }}
                 <span v-if="result.flags?.missing_accent" class="accent-note">(accent missing)</span>
               </div>
               <div v-if="!result.correct" class="expected-answer">
                 Expected: <strong>{{ result.expected_answer }}</strong>
+              </div>
+              <div v-else-if="resultNeedsRetry" class="expected-answer">
+                Correct spelling: <strong>{{ result.expected_answer }}</strong>
               </div>
               <div class="your-answer">
                 Your answer: <span :class="{ wrong: !result.correct }">{{ submittedAnswer }}</span>
@@ -249,6 +252,7 @@ const currentInfoDetail = computed(() => {
   if (!currentInfoKey.value) return null;
   return infoCache.value[currentInfoKey.value] || null;
 });
+const resultNeedsRetry = computed(() => Boolean(result.value?.flags?.missing_accent));
 const progressPercent = computed(() => {
   if (sessionTotal.value === 0) return 0;
   return (correctAttempts.value / sessionTotal.value) * 100;
@@ -416,11 +420,12 @@ async function submit() {
     const isFirstAttempt = !seenOnce.has(current.value.prompt_id);
     seenOnce.add(current.value.prompt_id);
     totalAttempts.value++;
-    if (data.correct) {
+    const countsAsComplete = data.correct && !data.flags?.missing_accent;
+    if (countsAsComplete) {
       correctAttempts.value++;
       if (isFirstAttempt) firstAttemptCorrect.value++;
     }
-    if (isFirstAttempt && counts.state.dueNow != null) {
+    if (countsAsComplete && isFirstAttempt && counts.state.dueNow != null) {
       counts.state.dueNow = Math.max(0, counts.state.dueNow - 1);
     }
     result.value = data;
@@ -430,12 +435,12 @@ async function submit() {
 }
 
 async function next() {
-  const wasCorrect = result.value?.correct;
+  const shouldRetry = !result.value?.correct || resultNeedsRetry.value;
   result.value = null;
   answer.value = "";
   showHint.value = 0;
 
-  if (!wasCorrect) {
+  if (shouldRetry) {
     // Re-queue this item at the end — must be answered correctly to finish
     queue.value.push({ ...queue.value[index.value] });
   }

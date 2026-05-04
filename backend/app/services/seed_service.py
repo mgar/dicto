@@ -23,6 +23,19 @@ def _load_fixtures() -> tuple[list, list]:
     return data.get("grammar_points", []), data.get("vocab_items", [])
 
 
+def _sync_prompt_answers(db_session, prompt: Prompt, answers: list[str]) -> None:
+    desired_answers = {answer for answer in answers if answer}
+    existing_answers = db_session.query(PromptAnswer).filter_by(prompt_id=prompt.id).all()
+
+    for answer_row in existing_answers:
+        if answer_row.answer not in desired_answers:
+            db_session.delete(answer_row)
+
+    existing_answer_texts = {answer_row.answer for answer_row in existing_answers}
+    for answer_text in desired_answers - existing_answer_texts:
+        db_session.add(PromptAnswer(prompt_id=prompt.id, answer=answer_text))
+
+
 def _seed_grammar(db_session, grammar_points: list) -> None:
     for gp_data in grammar_points:
         grammar_point = db_session.query(GrammarPoint).filter_by(slug=gp_data["slug"]).first()
@@ -68,11 +81,7 @@ def _seed_grammar(db_session, grammar_points: list) -> None:
                 db_session.add(prompt)
                 db_session.flush()
 
-            for answer_text in prompt_data["answers"]:
-                if not db_session.query(PromptAnswer).filter_by(
-                    prompt_id=prompt.id, answer=answer_text
-                ).first():
-                    db_session.add(PromptAnswer(prompt_id=prompt.id, answer=answer_text))
+            _sync_prompt_answers(db_session, prompt, prompt_data["answers"])
 
     db_session.commit()
 
@@ -111,11 +120,7 @@ def _seed_vocab(db_session, vocab_items: list) -> None:
                 db_session.add(prompt)
                 db_session.flush()
 
-            for answer_text in prompt_data["answers"]:
-                if not db_session.query(PromptAnswer).filter_by(
-                    prompt_id=prompt.id, answer=answer_text
-                ).first():
-                    db_session.add(PromptAnswer(prompt_id=prompt.id, answer=answer_text))
+            _sync_prompt_answers(db_session, prompt, prompt_data["answers"])
 
     db_session.commit()
 

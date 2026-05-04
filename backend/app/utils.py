@@ -107,11 +107,11 @@ def normalize_basic(text: str) -> tuple[str, bool]:
 
 
 def strip_accents(text: str) -> str:
-    """Remove accent marks from a string."""
+    """Remove acute accent marks while preserving letters such as ñ."""
     return "".join(
         character
         for character in unicodedata.normalize("NFD", text)
-        if unicodedata.category(character) != "Mn"
+        if character != "\N{COMBINING ACUTE ACCENT}"
     )
 
 
@@ -127,18 +127,37 @@ def grade_cloze(user_answer: str, accepted: list[str]) -> tuple[bool, int, dict,
     """
     user_norm, spacing = normalize_basic(user_answer)
     accepted_norm = [normalize_basic(candidate)[0] for candidate in accepted]
+    accepted_noacc = [strip_accents(candidate) for candidate in accepted_norm]
 
     # Exact match
     if user_norm in accepted_norm:
+        exact_index = accepted_norm.index(user_norm)
+        user_noacc = accepted_noacc[exact_index]
+        accented_match_index = next(
+            (
+                index
+                for index, candidate in enumerate(accepted_norm)
+                if index != exact_index
+                and accepted_noacc[index] == user_noacc
+                and candidate != strip_accents(candidate)
+            ),
+            None,
+        )
+        if accented_match_index is not None and user_norm == strip_accents(user_norm):
+            return (
+                True,
+                3,
+                {"missing_accent": True, "spacing_normalized": spacing},
+                accepted_norm[accented_match_index],
+            )
         return True, 4, {"missing_accent": False, "spacing_normalized": spacing}, accepted_norm[0]
 
     # Match without accents
     user_noacc = strip_accents(user_norm)
-    accepted_noacc = [strip_accents(candidate) for candidate in accepted_norm]
     if user_noacc in accepted_noacc:
         return (
             True,
-            4,
+            3,
             {"missing_accent": True, "spacing_normalized": spacing},
             accepted_norm[accepted_noacc.index(user_noacc)],
         )
