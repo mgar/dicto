@@ -28,6 +28,7 @@
       - [Backend](#backend)
       - [Frontend](#frontend)
     - [Seeding Content](#seeding-content)
+    - [Development Sample Data](#development-sample-data)
   - [Testing](#testing)
   - [Project Structure](#project-structure)
   - [Deployment](#deployment)
@@ -158,6 +159,28 @@ Or run the script directly from the backend container:
 
 ```bash
 python scripts/seed.py
+```
+
+### Development Sample Data
+
+To fill the default test user with realistic dashboard/review data while running the local Docker development environment:
+
+```bash
+make dev-sample-data
+```
+
+This target runs pending migrations, ensures the default users and real learning content exist, then loads sample data for `DEFAULT_USER_EMAIL` only. It resets that user's existing review states and review logs, then creates:
+
+- review items across multiple mastery levels
+- due/pending reviews
+- real scheduled review items in the forecast
+- past review activity for the activity chart
+- daily learning preferences so projected forecast items appear
+
+The script is guarded for local development: it requires `DICTO_DEV_SAMPLE_DATA=1` and refuses non-local database hosts. The Make target sets the guard flag for you. To use a different local timezone for the generated activity/forecast dates:
+
+```bash
+make dev-sample-data sample_tz=Europe/Madrid
 ```
 
 ## Testing
