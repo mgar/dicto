@@ -4266,7 +4266,7 @@
       "prompts": [
         {
           "sentence": "La comida está muy ___.",
-          "notes": "Translate: good (feminine = buena)",
+          "notes": "Translate: good",
           "answers": [
             "buena"
           ]
@@ -4287,7 +4287,7 @@
       "prompts": [
         {
           "sentence": "Esta película es muy ___.",
-          "notes": "Translate: bad (feminine = mala)",
+          "notes": "Translate: bad",
           "answers": [
             "mala"
           ]
@@ -4308,7 +4308,7 @@
       "prompts": [
         {
           "sentence": "Quiero comprar una casa ___.",
-          "notes": "Translate: new (feminine = nueva)",
+          "notes": "Translate: new",
           "answers": [
             "nueva"
           ]
@@ -4329,7 +4329,7 @@
       "prompts": [
         {
           "sentence": "Las flores son muy ___.",
-          "notes": "Translate: pretty (feminine plural = bonitas)",
+          "notes": "Translate: pretty",
           "answers": [
             "bonitas"
           ]
@@ -4351,7 +4351,7 @@
       "prompts": [
         {
           "sentence": "Ella es mi mejor ___.",
-          "notes": "Translate: friend (feminine = amiga)",
+          "notes": "Translate: friend",
           "answers": [
             "amiga"
           ]
@@ -4438,7 +4438,7 @@
       "prompts": [
         {
           "sentence": "Hay ___ gente aquí.",
-          "notes": "Translate: too many (feminine = demasiada)",
+          "notes": "Translate: too many",
           "answers": [
             "demasiada"
           ]

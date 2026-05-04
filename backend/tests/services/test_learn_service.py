@@ -50,6 +50,51 @@ class TestLearnService:
         assert state.status == "reviewing"
         assert state.due_at == fixed_now.replace(tzinfo=None)
 
+    def test_learn_count_matches_unique_study_items(self, db_session):
+        user = make_user(db_session, email="svc-learn-count-items@dicto.es", password="pw")
+        grammar_point = make_grammar_point(db_session, slug="count-items-gp")
+        make_review_state(
+            db_session,
+            user,
+            make_prompt(
+                db_session,
+                grammar_point=grammar_point,
+                sentence="Count one ___.",
+                answers=("es",),
+            ),
+            status="learning",
+        )
+        make_review_state(
+            db_session,
+            user,
+            make_prompt(
+                db_session,
+                grammar_point=grammar_point,
+                sentence="Count two ___.",
+                answers=("es",),
+            ),
+            status="learning",
+        )
+        vocab = make_vocab_item(db_session, level="A1", word="conteo")
+        make_review_state(
+            db_session,
+            user,
+            make_prompt(
+                db_session,
+                kind="vocab",
+                vocab_item=vocab,
+                sentence="Un ___.",
+                answers=("conteo",),
+            ),
+            status="learning",
+        )
+
+        assert learn_service.learn_count(db_session, user, None)["remaining"] == 2
+        assert learn_service.learn_count(db_session, user, "grammar")["remaining"] == 1
+        assert learn_service.learn_count(db_session, user, "vocab")["remaining"] == 1
+        assert learn_service.learn_queue(db_session, user, 10, None)["new_in_queue"] == 2
+        assert len(learn_service.get_study_queue(db_session, user)["items"]) == 2
+
     def test_add_specific_item_uses_user_local_date(self, db_session, monkeypatch):
         user = make_user(db_session, email="svc-learn-add-local@dicto.es", password="pw")
         grammar_point = make_grammar_point(db_session, slug="add-local-date")

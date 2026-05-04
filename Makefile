@@ -1,4 +1,6 @@
-.PHONY: help up down build logs test test-cov test-frontend test-all e2e migration migrate stamp-head seed reset
+sample_tz ?= America/Los_Angeles
+
+.PHONY: help up down build logs test test-cov test-frontend test-all e2e migration migrate stamp-head seed dev-sample-data reset
 
 help:
 	@echo "Usage:"
@@ -15,6 +17,7 @@ help:
 	@echo "  make migrate         Apply pending migrations against the running DB"
 	@echo "  make stamp-head      Mark existing DB as up-to-date (use on first deploy of existing DB)"
 	@echo "  make seed            Populate the DB with initial Spanish learning content"
+	@echo "  make dev-sample-data Load dev-only dashboard/review sample data for the test user"
 	@echo "  make reset           Remove all volumes and start fresh (wipes database)"
 
 up:
@@ -99,6 +102,13 @@ stamp-head:
 		api sh -c "pip install -q -r requirements.txt && alembic stamp head"
 seed:
 	docker-compose run --rm api python scripts/seed.py
+
+dev-sample-data:
+	@test -f .env || cp .env.example .env
+	docker-compose run --rm \
+		-e DICTO_DEV_SAMPLE_DATA=1 \
+		-e DICTO_DEV_SAMPLE_TIME_ZONE="$(sample_tz)" \
+		api sh -c "alembic upgrade head && python scripts/dev_sample_data.py"
 
 reset:
 	@echo "Stopping containers and removing all volumes..."

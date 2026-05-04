@@ -73,6 +73,37 @@ def _introduced_today_count(db_session: Session, user: User, local_today) -> int
     ).scalar_one())
 
 
+def _learning_item_count(db_session: Session, user: User, kind: str | None = None) -> int:
+    stmt = (
+        select(
+            Prompt.id,
+            Prompt.kind,
+            Prompt.grammar_point_id,
+            Prompt.vocab_item_id,
+        )
+        .select_from(ReviewState)
+        .join(Prompt, Prompt.id == ReviewState.prompt_id)
+        .where(
+            and_(
+                ReviewState.user_id == user.id,
+                ReviewState.status == "learning",
+            )
+        )
+    )
+    if kind:
+        stmt = stmt.where(Prompt.kind == kind)
+
+    item_keys = set()
+    for prompt_id, prompt_kind, grammar_point_id, vocab_item_id in db_session.execute(stmt).all():
+        if prompt_kind == "grammar" and grammar_point_id is not None:
+            item_keys.add(("grammar", grammar_point_id))
+        elif prompt_kind == "vocab" and vocab_item_id is not None:
+            item_keys.add(("vocab", vocab_item_id))
+        else:
+            item_keys.add((prompt_kind, prompt_id))
+    return len(item_keys)
+
+
 def _select_unseen_prompts(
     db_session: Session,
     user: User,
@@ -188,20 +219,7 @@ def get_learn_levels(db_session: Session, user: User) -> dict:
 
 
 def learn_count(db_session: Session, user: User, kind: str | None) -> dict:
-    stmt = (
-        select(func.count())
-        .select_from(ReviewState)
-        .join(Prompt, Prompt.id == ReviewState.prompt_id)
-        .where(
-            and_(
-                ReviewState.user_id == user.id,
-                ReviewState.status == "learning",
-            )
-        )
-    )
-    if kind:
-        stmt = stmt.where(Prompt.kind == kind)
-    remaining = int(db_session.execute(stmt).scalar_one())
+    remaining = _learning_item_count(db_session, user, kind)
     return {"remaining": remaining}
 
 
@@ -246,20 +264,7 @@ def learn_queue(db_session: Session, user: User, limit: int, kind: str | None) -
         available_stmt = available_stmt.where(Prompt.kind == kind)
     available_to_add = int(db_session.execute(available_stmt).scalar_one())
 
-    new_in_queue_stmt = (
-        select(func.count())
-        .select_from(ReviewState)
-        .join(Prompt, Prompt.id == ReviewState.prompt_id)
-        .where(
-            and_(
-                ReviewState.user_id == user.id,
-                ReviewState.status == "learning",
-            )
-        )
-    )
-    if kind:
-        new_in_queue_stmt = new_in_queue_stmt.where(Prompt.kind == kind)
-    new_in_queue = int(db_session.execute(new_in_queue_stmt).scalar_one())
+    new_in_queue = _learning_item_count(db_session, user, kind)
 
     return {
         "items": items,
@@ -625,16 +630,7 @@ def auto_add_items(
     now = now_utc()
     local_today = local_date_from_utc(now, tz_offset, time_zone)
 
-    unstudied_count = db_session.execute(
-        select(func.count())
-        .select_from(ReviewState)
-        .where(
-            and_(
-                ReviewState.user_id == user.id,
-                ReviewState.status == "learning",
-            )
-        )
-    ).scalar_one()
+    unstudied_count = _learning_item_count(db_session, user)
 
     if unstudied_count > 0:
         return {
