@@ -42,128 +42,152 @@
 
     <!-- Review card -->
     <div v-else class="review-container">
-      <!-- Progress indicator -->
-      <div class="progress-bar">
-        <div class="progress-fill" :style="{ width: progressPercent + '%' }"></div>
-      </div>
-      <div class="progress-header">
-        <div class="progress-text">{{ correctAttempts }} / {{ sessionTotal }}</div>
-        <button class="end-session-btn ghost-btn" @click="showEndConfirm = true">
-          End Session
-        </button>
-      </div>
-
-      <!-- End session confirmation modal -->
-      <div v-if="showEndConfirm" class="modal-overlay" @click.self="showEndConfirm = false">
-        <div class="modal-card surface">
-          <h3>End session early?</h3>
-          <p class="muted">
-            You've completed {{ correctAttempts }} of {{ sessionTotal }} reviews.
-            The remaining {{ sessionTotal - correctAttempts }} will stay in your queue.
-          </p>
-          <div class="btn-row-center">
-            <button class="btn secondary" @click="showEndConfirm = false">Keep Going</button>
-            <button class="btn danger" @click="endSession">End Session</button>
+      <section class="review-stage">
+        <!-- Progress indicator -->
+        <div class="progress-shell">
+          <div class="progress-bar">
+            <div class="progress-fill" :style="{ width: progressPercent + '%' }"></div>
           </div>
-        </div>
-      </div>
-
-      <div class="review-card surface" :data-prompt-id="current?.prompt_id">
-        <!-- Type badge - don't reveal the answer! -->
-        <TypeBadge :type="current.kind">
-          {{ current.kind === 'grammar' ? current.grammar_title : 'Vocabulary' }}
-        </TypeBadge>
-
-        <!-- Sentence with live input -->
-        <div class="sentence-container">
-          <p class="sentence">
-            <template v-for="(part, idx) in sentenceParts" :key="idx">
-              <span v-if="part.type === 'text'">{{ part.content }}</span>
-              <span 
-                v-else 
-                class="inline-input" 
-                :class="{ 
-                  typing: answer.length > 0,
-                  correct: result?.correct,
-                  incorrect: result && !result.correct
-                }"
-              >
-                <span v-if="result" class="final-answer">
-                  {{ result.correct ? submittedAnswer : result.expected_answer }}
-                </span>
-                <span v-else-if="answer" class="live-input">{{ answer }}</span>
-                <span v-else class="placeholder">______</span>
-                <span v-if="!result && answer" class="cursor"></span>
-              </span>
-            </template>
-          </p>
-        </div>
-
-        <!-- Primary instruction (always visible) -->
-        <div class="instruction" v-if="current.notes">
-          {{ current.notes }}
-        </div>
-
-        <!-- Additional hint (only when user clicks hint) -->
-        <div class="context-hint" v-if="showHint >= 1">
-          <div class="hint-icon">
-            <Icon name="info" />
-          </div>
-          <div class="hint-text">
-            <span v-if="current.kind === 'grammar'">
-              {{ getGrammarHint() }}
-            </span>
-            <span v-else>
-              {{ getVocabHint() }}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Answer section -->
-      <div class="answer-section">
-        <!-- Result feedback -->
-        <div v-if="result" class="result-card" :class="{ correct: result.correct, incorrect: !result.correct }">
-          <div class="result-icon">
-            <Icon v-if="result.correct" name="check" stroke-width="2.5" />
-            <Icon v-else name="x" stroke-width="2.5" />
-          </div>
-          <div class="result-content">
-            <div class="result-title">
-              {{ result.correct ? 'Correct!' : 'Not quite' }}
-              <span v-if="result.flags?.missing_accent" class="accent-note">(accent missing)</span>
-            </div>
-            <div v-if="!result.correct" class="expected-answer">
-              Expected: <strong>{{ result.expected_answer }}</strong>
-            </div>
-            <div class="your-answer">
-              Your answer: <span :class="{ wrong: !result.correct }">{{ submittedAnswer }}</span>
-            </div>
-          </div>
-          <button class="btn lg next-btn" @click="next">
-            <span>Continue</span>
-            <Icon name="chevron-right" />
-          </button>
-        </div>
-
-        <!-- Input form -->
-        <form v-else class="answer-form" @submit.prevent="submit">
-          <div class="input-wrapper surface">
-            <input 
-              ref="answerInput"
-              class="answer-input" 
-              v-model="answer" 
-              :placeholder="getPlaceholder()"
-              :disabled="submitting"
-              autocomplete="off"
-              autocapitalize="off"
-              spellcheck="false"
-            />
-            <button type="submit" class="btn icon-only submit-btn" :disabled="submitting || !answer.trim()">
-              <Icon name="send" />
+          <div class="progress-header">
+            <div class="progress-text">{{ correctAttempts }} / {{ sessionTotal }}</div>
+            <button class="end-session-btn ghost-btn" @click="showEndConfirm = true">
+              End Session
             </button>
           </div>
-        </form>
+        </div>
+
+        <!-- End session confirmation modal -->
+        <div v-if="showEndConfirm" class="modal-overlay" @click.self="showEndConfirm = false">
+          <div class="modal-card surface">
+            <h3>End session early?</h3>
+            <p class="muted">
+              You've completed {{ correctAttempts }} of {{ sessionTotal }} reviews.
+              The remaining {{ sessionTotal - correctAttempts }} will stay in your queue.
+            </p>
+            <div class="btn-row-center">
+              <button class="btn secondary" @click="showEndConfirm = false">Keep Going</button>
+              <button class="btn danger" @click="endSession">End Session</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="review-card surface" :data-prompt-id="current?.prompt_id">
+          <!-- Type badge - don't reveal the answer! -->
+          <TypeBadge :type="current.kind">
+            {{ current.kind === 'grammar' ? current.grammar_title : 'Vocabulary' }}
+          </TypeBadge>
+
+          <!-- Sentence with live input -->
+          <div class="sentence-container">
+            <p class="sentence">
+              <template v-for="(part, idx) in sentenceParts" :key="idx">
+                <span v-if="part.type === 'text'">{{ part.content }}</span>
+                <span
+                  v-else
+                  class="inline-input"
+                  :class="{
+                    typing: answer.length > 0,
+                    correct: result?.correct,
+                    incorrect: result && !result.correct
+                  }"
+                >
+                  <span v-if="result" class="final-answer">
+                    {{ result.correct && !resultNeedsRetry ? submittedAnswer : result.expected_answer }}
+                  </span>
+                  <span v-else-if="answer" class="live-input">{{ answer }}</span>
+                  <span v-else class="placeholder">______</span>
+                  <span v-if="!result && answer" class="cursor"></span>
+                </span>
+              </template>
+            </p>
+          </div>
+
+          <!-- Primary instruction (always visible) -->
+          <div class="instruction" v-if="current.notes">
+            {{ current.notes }}
+          </div>
+
+          <!-- Additional hint (only when user clicks hint) -->
+          <div class="context-hint" v-if="showHint >= 1">
+            <div class="hint-icon">
+              <Icon name="info" />
+            </div>
+            <div class="hint-text">
+              <span v-if="current.kind === 'grammar'">
+                {{ getGrammarHint() }}
+              </span>
+              <span v-else>
+                {{ getVocabHint() }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Answer section -->
+        <div class="answer-section">
+          <!-- Result feedback -->
+          <div v-if="result" class="result-card" :class="{ correct: result.correct, incorrect: !result.correct }">
+            <div class="result-icon">
+              <Icon v-if="result.correct" name="check" stroke-width="2.5" />
+              <Icon v-else name="x" stroke-width="2.5" />
+            </div>
+            <div class="result-content">
+              <div class="result-title">
+                {{ resultNeedsRetry ? 'Accent needed' : result.correct ? 'Correct!' : 'Not quite' }}
+                <span v-if="result.flags?.missing_accent" class="accent-note">(accent missing)</span>
+              </div>
+              <div v-if="!result.correct" class="expected-answer">
+                Expected: <strong>{{ result.expected_answer }}</strong>
+              </div>
+              <div v-else-if="resultNeedsRetry" class="expected-answer">
+                Correct spelling: <strong>{{ result.expected_answer }}</strong>
+              </div>
+              <div class="your-answer">
+                Your answer: <span :class="{ wrong: !result.correct }">{{ submittedAnswer }}</span>
+              </div>
+            </div>
+            <div class="result-actions">
+              <button class="btn secondary lg info-scroll-btn" type="button" @click="scrollToInfo">
+                <Icon name="info" />
+                <span>Show Info</span>
+              </button>
+              <button class="btn lg next-btn" @click="next">
+                <span>Continue</span>
+                <Icon name="chevron-right" />
+              </button>
+            </div>
+          </div>
+
+          <!-- Input form -->
+          <form v-else class="answer-form" @submit.prevent="submit">
+            <div class="input-wrapper surface">
+              <input
+                ref="answerInput"
+                class="answer-input"
+                v-model="answer"
+                :placeholder="getPlaceholder()"
+                :disabled="submitting"
+                autocomplete="off"
+                autocapitalize="off"
+                spellcheck="false"
+              />
+              <button type="submit" class="btn icon-only submit-btn" :disabled="submitting || !answer.trim()">
+                <Icon name="send" />
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <div ref="infoAnchorRef" class="info-anchor">
+        <ReviewInfoPanel
+          v-if="result && current"
+          :item="current"
+          :detail="currentInfoDetail"
+          :loading="infoLoading"
+          :error="infoError"
+        />
+        <div v-else class="info-placeholder" aria-hidden="true"></div>
       </div>
 
       <!-- Hint toggle -->
@@ -181,11 +205,12 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, onUnmounted, ref } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { apiFetch, localDateString, timezonePayload } from "../api";
 import { useCounts } from "../counts";
 import TypeBadge from "../components/badges/TypeBadge.vue";
 import Icon from "../components/Icon.vue";
+import ReviewInfoPanel from "../components/review/ReviewInfoPanel.vue";
 
 const counts = useCounts();
 const queue = ref([]);
@@ -198,6 +223,11 @@ const submittedAnswer = ref("");
 const result = ref(null);
 const showHint = ref(0);
 const answerInput = ref(null);
+const infoAnchorRef = ref(null);
+const infoCache = ref({});
+const infoLoading = ref(false);
+const infoError = ref("");
+let infoRequestId = 0;
 
 const done = ref(false);
 const showEndConfirm = ref(false);
@@ -208,6 +238,21 @@ const firstAttemptCorrect = ref(0);
 let seenOnce = new Set();
 
 const current = computed(() => queue.value[index.value]);
+const currentInfoKey = computed(() => {
+  if (!current.value) return "";
+  if (current.value.kind === "grammar" && current.value.grammar_point_id) {
+    return `grammar:${current.value.grammar_point_id}`;
+  }
+  if (current.value.kind === "vocab" && current.value.vocab_item_id) {
+    return `vocab:${current.value.vocab_item_id}`;
+  }
+  return "";
+});
+const currentInfoDetail = computed(() => {
+  if (!currentInfoKey.value) return null;
+  return infoCache.value[currentInfoKey.value] || null;
+});
+const resultNeedsRetry = computed(() => Boolean(result.value?.flags?.missing_accent));
 const progressPercent = computed(() => {
   if (sessionTotal.value === 0) return 0;
   return (correctAttempts.value / sessionTotal.value) * 100;
@@ -283,6 +328,57 @@ function toggleHint() {
   showHint.value = (showHint.value + 1) % 4;
 }
 
+// Fetch additional info for the current item
+function getInfoEndpoint(item) {
+  if (!item) return "";
+  if (item.kind === "grammar" && item.grammar_point_id) {
+    return `/api/grammar-points/${item.grammar_point_id}`;
+  }
+  if (item.kind === "vocab" && item.vocab_item_id) {
+    return `/api/vocab-items/${item.vocab_item_id}`;
+  }
+  return "";
+}
+
+async function loadCurrentInfo() {
+  const item = current.value;
+  const key = currentInfoKey.value;
+  const endpoint = getInfoEndpoint(item);
+  const requestId = ++infoRequestId;
+  infoError.value = "";
+  if (!key || !endpoint || infoCache.value[key]) {
+    infoLoading.value = false;
+    return;
+  }
+
+  infoLoading.value = true;
+  try {
+    const detail = await apiFetch(endpoint);
+    if (requestId !== infoRequestId) return;
+    infoCache.value = {
+      ...infoCache.value,
+      [key]: detail,
+    };
+  } catch {
+    if (requestId !== infoRequestId) return;
+    infoError.value = "Could not load this item's info.";
+  } finally {
+    if (requestId === infoRequestId) {
+      infoLoading.value = false;
+    }
+  }
+}
+
+async function scrollToInfo() {
+  if (!result.value) return;
+  await loadCurrentInfo();
+  await nextTick();
+  infoAnchorRef.value?.scrollIntoView({
+    behavior: "smooth",
+    block: "start",
+  });
+}
+
 async function loadQueue() {
   loading.value = true;
   result.value = null;
@@ -324,11 +420,12 @@ async function submit() {
     const isFirstAttempt = !seenOnce.has(current.value.prompt_id);
     seenOnce.add(current.value.prompt_id);
     totalAttempts.value++;
-    if (data.correct) {
+    const countsAsComplete = data.correct && !data.flags?.missing_accent;
+    if (countsAsComplete) {
       correctAttempts.value++;
       if (isFirstAttempt) firstAttemptCorrect.value++;
     }
-    if (isFirstAttempt && counts.state.dueNow != null) {
+    if (countsAsComplete && isFirstAttempt && counts.state.dueNow != null) {
       counts.state.dueNow = Math.max(0, counts.state.dueNow - 1);
     }
     result.value = data;
@@ -338,12 +435,12 @@ async function submit() {
 }
 
 async function next() {
-  const wasCorrect = result.value?.correct;
+  const shouldRetry = !result.value?.correct || resultNeedsRetry.value;
   result.value = null;
   answer.value = "";
   showHint.value = 0;
 
-  if (!wasCorrect) {
+  if (shouldRetry) {
     // Re-queue this item at the end — must be answered correctly to finish
     queue.value.push({ ...queue.value[index.value] });
   }
@@ -392,16 +489,30 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown);
 });
+
+// Watch for changes in the current prompt or result
+watch(
+  () => [current.value?.prompt_id, Boolean(result.value)],
+  ([, hasResult]) => {
+    infoError.value = "";
+    if (hasResult) {
+      loadCurrentInfo();
+    } else {
+      infoLoading.value = false;
+      infoRequestId++;
+    }
+  }
+);
 </script>
 
 <style scoped>
 .review-page {
-  min-height: calc(100vh - 120px);
+  min-height: calc(100svh - 120px);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  padding: 40px 20px 20px;
+  padding: 0 20px 24px;
 }
 
 /* Done / completion state */
@@ -481,8 +592,21 @@ onUnmounted(() => {
 /* Review container */
 .review-container {
   width: 100%;
-  max-width: 800px;
+  max-width: 1240px;
   position: relative;
+}
+
+.review-stage {
+  min-height: calc(100svh - 112px);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  align-content: stretch;
+  gap: 18px;
+  padding: 8px 0 24px;
+}
+
+.progress-shell {
+  width: 100%;
 }
 
 /* Progress bar */
@@ -505,7 +629,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
+  margin-bottom: 0;
 }
 
 .progress-text {
@@ -569,10 +693,11 @@ onUnmounted(() => {
 
 /* Review card */
 .review-card {
+  align-self: center;
   border-radius: 20px;
-  padding: 48px 40px;
+  height: clamp(520px, 58svh, 780px);
+  padding: clamp(36px, 6svh, 64px) 64px clamp(72px, 10svh, 120px);
   text-align: center;
-  min-height: 300px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -589,11 +714,11 @@ onUnmounted(() => {
 }
 
 .sentence {
-  font-size: 31px;
+  font-size: 36px;
   line-height: 1.65;
   margin: 0;
   font-weight: 600;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 
 .inline-input {
@@ -695,9 +820,43 @@ onUnmounted(() => {
   line-height: 1.55;
 }
 
+.info-scroll-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 14px;
+  border-radius: 11px;
+  font-size: 13.5px;
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+
+.info-scroll-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.info-scroll-btn:hover {
+  border-color: var(--accent-border);
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+}
+
+.info-anchor {
+  scroll-margin-top: 24px;
+}
+
+.info-placeholder {
+  min-height: 1px;
+}
+
 /* Answer section */
 .answer-section {
-  margin-top: 20px;
+  width: min(100%, 560px);
+  justify-self: center;
+  margin-top: 0;
+  margin-bottom: clamp(28px, 4svh, 56px);
+  align-self: end;
 }
 
 .answer-form {
@@ -852,11 +1011,17 @@ onUnmounted(() => {
   text-decoration: line-through;
 }
 
+.result-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
 .next-btn {
   display: inline-flex;
   gap: 5px;
   border-radius: 11px;
-  flex-shrink: 0;
 }
 
 /* Hint toggle */
@@ -910,7 +1075,7 @@ onUnmounted(() => {
 /* Keyboard hint */
 .keyboard-hint {
   position: fixed;
-  bottom: 24px;
+  bottom: 20px;
   right: 24px;
   font-size: 12px;
   color: var(--text-muted);
@@ -919,12 +1084,27 @@ onUnmounted(() => {
 
 /* Responsive */
 @media (max-width: 640px) {
+  .review-page {
+    padding-inline: 0;
+  }
+
+  .review-stage {
+    min-height: calc(100svh - 96px);
+    grid-template-rows: auto 1fr auto;
+    padding: 12px 0 24px;
+  }
+
   .review-card {
-    padding: 28px 20px;
+    height: clamp(380px, 56svh, 520px);
+    padding: 32px 20px 56px;
   }
 
   .sentence {
-    font-size: 22px;
+    font-size: 24px;
+  }
+
+  .answer-section {
+    margin-bottom: 16px;
   }
 
   .hint-toggle,
@@ -945,6 +1125,12 @@ onUnmounted(() => {
 
   .result-content {
     text-align: center;
+  }
+
+  .result-actions {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
   }
 }
 </style>

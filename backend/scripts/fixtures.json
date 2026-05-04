@@ -60,8 +60,7 @@
           "sentence": "El café ___ caliente.",
           "notes": "Use estar for temporary states.",
           "answers": [
-            "está",
-            "esta"
+            "está"
           ]
         }
       ]
@@ -1751,8 +1750,7 @@
           "sentence": "El supermercado ___ en la calle Mayor.",
           "notes": "Location of a specific thing = está.",
           "answers": [
-            "está",
-            "esta"
+            "está"
           ]
         }
       ]
@@ -1848,8 +1846,7 @@
           "sentence": "Ella ___ por teléfono.",
           "notes": "She is talking on the phone (estar + gerundio).",
           "answers": [
-            "está hablando",
-            "esta hablando"
+            "está hablando"
           ]
         }
       ]

@@ -35,11 +35,27 @@ class TestGradeCloze:
         correct, grade, flags, _ = grade_cloze("esta", ["está"])
         assert correct is True
         assert flags["missing_accent"] is True
-        assert grade == 4
+        assert grade == 3
 
     def test_missing_accent_on_multiple_accepted(self):
         correct, grade, flags, _ = grade_cloze("comio", ["comió", "comio"])
         assert correct is True
+        assert flags["missing_accent"] is True
+        assert grade == 3
+
+    def test_unaccented_stale_accepted_answer_does_not_hide_missing_accent(self):
+        correct, grade, flags, expected = grade_cloze("esta", ["está", "esta"])
+        assert correct is True
+        assert flags["missing_accent"] is True
+        assert grade == 3
+        assert expected == "está"
+
+    def test_enye_is_not_treated_as_missing_accent(self):
+        correct, grade, flags, expected = grade_cloze("ano", ["año"])
+        assert correct is False
+        assert flags["missing_accent"] is False
+        assert grade == 2
+        assert expected == "año"
 
     def test_wrong_answer(self):
         correct, grade, flags, expected = grade_cloze("son", ["es"])

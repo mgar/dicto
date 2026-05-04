@@ -2,7 +2,7 @@
   <div class="app-shell">
     <AppNavbar />
     <div class="app-main">
-      <main class="container">
+      <main :class="mainContainerClass">
         <RouterView />
       </main>
     </div>
@@ -17,7 +17,12 @@ import AppNavbar from "./components/AppNavBar.vue";
 import AppFooter from "./components/AppFooter.vue";
 
 const route = useRoute();
-const showFooter = computed(() => route.path !== "/review");
+const isReviewRoute = computed(() => route.path === "/review");
+const showFooter = computed(() => !isReviewRoute.value);
+const mainContainerClass = computed(() => [
+  "container",
+  { "review-route-container": isReviewRoute.value },
+]);
 </script>
 
 <style>
@@ -267,6 +272,11 @@ a {
   max-width: 1120px;
   margin: 0 auto;
   padding: var(--space-6) var(--space-5);
+}
+
+.container.review-route-container {
+  max-width: 1440px;
+  padding-top: var(--space-4);
 }
 
 .card {

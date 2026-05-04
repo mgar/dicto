@@ -66,6 +66,43 @@ class TestReviewsService:
         ).scalar_one()
         assert log_count == 1
 
+    def test_submit_review_answer_missing_accent_uses_weaker_grade(self, db_session):
+        user = make_user(db_session, email="svc-submit-accent@dicto.es", password="pw")
+        grammar_point = make_grammar_point(db_session, slug="submit-accent-gp")
+        prompt = make_prompt(
+            db_session,
+            grammar_point=grammar_point,
+            sentence="Ella ___ aquí.",
+            answers=("está", "esta"),
+        )
+        make_review_state(
+            db_session,
+            user,
+            prompt,
+            due_at=datetime.now(UTC).replace(tzinfo=None) - timedelta(minutes=2),
+        )
+
+        service_output = reviews_service.submit_review_answer(
+            db_session,
+            user,
+            prompt.id,
+            "esta",
+            local_date=date.today().isoformat(),
+            tz_offset=0,
+        )
+
+        assert service_output["correct"] is True
+        assert service_output["grade"] == 3
+        assert service_output["flags"]["missing_accent"] is True
+        assert service_output["expected_answer"] == "está"
+
+        log = db_session.execute(
+            select(ReviewLog).where(ReviewLog.user_id == user.id)
+        ).scalar_one()
+        assert log.is_correct is True
+        assert log.grade == 3
+        assert log.missing_accent is True
+
     def test_submit_review_answer_uses_time_zone_for_dst(self, db_session, monkeypatch):
         user = make_user(db_session, email="svc-submit-dst@dicto.es", password="pw")
         grammar_point = make_grammar_point(db_session, slug="submit-dst-gp")
