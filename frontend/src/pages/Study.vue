@@ -106,6 +106,7 @@
         <button 
           v-if="currentIndex > 0" 
           class="btn secondary lg" 
+          :disabled="startingReview"
           @click="previous"
         >
           <Icon name="chevron-left" />
@@ -115,13 +116,18 @@
 
         <button 
           class="btn primary lg" 
+          :disabled="startingReview"
           @click="next"
         >
-          <span v-if="isLastItem">Start Review</span>
+          <span v-if="isLastItem">{{ startingReview ? 'Starting...' : 'Start Review' }}</span>
           <span v-else>Next</span>
           <Icon name="chevron-right" />
         </button>
       </div>
+
+      <p v-if="studyError" class="study-error" role="alert">
+        {{ studyError }}
+      </p>
     </div>
   </div>
 </template>
@@ -139,6 +145,8 @@ const router = useRouter();
 const counts = useCounts();
 
 const loading = ref(true);
+const startingReview = ref(false);
+const studyError = ref("");
 const items = ref([]);
 const currentIndex = ref(0);
 
@@ -200,6 +208,7 @@ function highlightText(sentence, highlight) {
 
 async function loadNewItems() {
   loading.value = true;
+  studyError.value = "";
   try {
     const data = await apiFetch("/api/learn/study-queue");
     items.value = data.items;
@@ -211,23 +220,30 @@ async function loadNewItems() {
 }
 
 function previous() {
+  if (startingReview.value) return;
   if (currentIndex.value > 0) {
     currentIndex.value--;
   }
 }
 
 async function next() {
+  if (startingReview.value) return;
+  studyError.value = "";
   if (isLastItem.value) {
     // Mark items as "seen" and go to review
+    startingReview.value = true;
     try {
       await apiFetch("/api/learn/mark-studied", { 
         method: "POST"
       });
       await counts.refresh();
+      router.push("/review");
     } catch (e) {
       console.error("Failed to mark as studied:", e);
+      studyError.value = "We couldn't start the review session. Please try again.";
+    } finally {
+      startingReview.value = false;
     }
-    router.push("/review");
   } else {
     currentIndex.value++;
   }
@@ -448,6 +464,14 @@ onMounted(loadNewItems);
   justify-content: space-between;
   align-items: center;
   padding-top: 16px;
+}
+
+.study-error {
+  margin: 14px 0 0;
+  color: var(--error);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: right;
 }
 
 /* Mobile */

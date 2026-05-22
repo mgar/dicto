@@ -1,5 +1,6 @@
 """Learning queue, study flow, preferences, auto-add."""
 import json
+from datetime import timedelta
 
 from sqlalchemy import and_, delete, func, or_, select
 from sqlalchemy.orm import Session
@@ -580,7 +581,9 @@ def get_study_queue(db_session: Session, user: User) -> dict:
 
 
 def mark_items_studied(db_session: Session, user: User) -> dict:
-    due_at = now_utc().replace(tzinfo=None)
+    # Make newly studied items immediately eligible even when the next queue
+    # request lands on a timestamp/DB-precision boundary.
+    due_at = now_utc().replace(tzinfo=None) - timedelta(seconds=1)
 
     stmt = select(ReviewState).where(
         and_(

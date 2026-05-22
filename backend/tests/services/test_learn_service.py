@@ -6,7 +6,7 @@ from sqlalchemy import select
 from app.models import ReviewState
 from app.dependencies import now_utc
 from app.schemas.learn import PreferencesIn
-from app.services import learn_service
+from app.services import learn_service, reviews_service
 from app.services.errors import ServiceError
 from tests.conftest import make_grammar_point, make_prompt, make_user, make_vocab_item
 from tests.services.helpers import make_review_state
@@ -48,7 +48,22 @@ class TestLearnService:
             )
         ).scalar_one()
         assert state.status == "reviewing"
-        assert state.due_at == fixed_now.replace(tzinfo=None)
+        assert state.due_at == fixed_now.replace(tzinfo=None) - timedelta(seconds=1)
+
+    def test_mark_items_studied_are_immediately_visible_to_review_queue(self, db_session, monkeypatch):
+        user = make_user(db_session, email="svc-learn-mark-visible@dicto.es", password="pw")
+        grammar_point = make_grammar_point(db_session, slug="mark-visible")
+        prompt = make_prompt(db_session, grammar_point=grammar_point, answers=("es",))
+        make_review_state(db_session, user, prompt, status="learning")
+        fixed_now = datetime(2026, 4, 29, 15, 30, tzinfo=UTC)
+        monkeypatch.setattr(learn_service, "now_utc", lambda: fixed_now)
+        monkeypatch.setattr(reviews_service, "now_utc", lambda: fixed_now - timedelta(milliseconds=500))
+
+        learn_service.mark_items_studied(db_session, user)
+
+        assert reviews_service.reviews_count_due(db_session, user)["due_now"] == 1
+        queue_output = reviews_service.get_review_queue(db_session, user, limit=10, kind=None)
+        assert [item["prompt_id"] for item in queue_output["items"]] == [prompt.id]
 
     def test_learn_count_matches_unique_study_items(self, db_session):
         user = make_user(db_session, email="svc-learn-count-items@dicto.es", password="pw")
