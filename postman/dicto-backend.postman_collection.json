@@ -1,0 +1,1393 @@
+{
+  "info": {
+    "_postman_id": "024610f8-8866-4da5-8df8-26fd46dd0913",
+    "name": "Dicto Backend API",
+    "description": "Complete collection for the Dicto FastAPI backend.\n\nAuthentication uses the HttpOnly `dicto_session` cookie. Postman stores the cookie automatically after a successful login, so run a login request before protected requests. Use **Login as User** for normal API operations and **Login as Admin** before the Admin folder.\n\nLocal defaults match `.env.example`. Change the collection variables for another environment. Optional query parameters are shown with example values and can be removed in Postman's Params tab.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test(\"Response time is under 5 seconds\", function () {",
+          "  pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "userEmail",
+      "value": "test@dicto.es",
+      "type": "string"
+    },
+    {
+      "key": "userPassword",
+      "value": "changeme",
+      "type": "string"
+    },
+    {
+      "key": "adminEmail",
+      "value": "admin@dicto.es",
+      "type": "string"
+    },
+    {
+      "key": "adminPassword",
+      "value": "changeme",
+      "type": "string"
+    },
+    {
+      "key": "googleCredential",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "grammarPointId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "vocabItemId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "reviewPromptId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "level",
+      "value": "A1",
+      "type": "string"
+    },
+    {
+      "key": "kind",
+      "value": "grammar",
+      "type": "string"
+    },
+    {
+      "key": "timeZone",
+      "value": "America/Los_Angeles",
+      "type": "string"
+    },
+    {
+      "key": "tzOffset",
+      "value": "420",
+      "type": "string"
+    },
+    {
+      "key": "localDate",
+      "value": "2026-06-11",
+      "type": "string"
+    },
+    {
+      "key": "adminGrammarPointId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminGrammarSlug",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminVocabItemId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminPromptId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "description": "Public health check.",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/health",
+            "description": "Returns `{ \"ok\": true }` when the API is available."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "description": "Login sets the `dicto_session` cookie in Postman's cookie jar.",
+      "item": [
+        {
+          "name": "Login as User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/login",
+            "description": "Authenticates with the default regular user and stores the session cookie.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Authenticated user is returned\", function () {",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response).to.have.property(\"user\");",
+                  "  pm.expect(response.user.email).to.eql(pm.collectionVariables.get(\"userEmail\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login as Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/login",
+            "description": "Authenticates with the default admin and replaces the active session cookie.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Authenticated user is an admin\", function () {",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response.user.is_admin).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Google Sign-In",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/google",
+            "description": "Authenticates with a Google ID token. Requires `GOOGLE_CLIENT_ID` on the backend.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"credential\": \"{{googleCredential}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Current User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/auth/me",
+            "description": "Returns the user associated with the current session cookie."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Grammar Points",
+      "description": "Authenticated grammar content endpoints.",
+      "item": [
+        {
+          "name": "List Grammar Points",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/grammar-points",
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Grammar Points by Level",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/grammar-points/by-level",
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Grammar Point",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/grammar-points/{{grammarPointId}}",
+            "description": "Set `grammarPointId` to an existing seeded grammar point."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Vocabulary",
+      "description": "Authenticated vocabulary content endpoints.",
+      "item": [
+        {
+          "name": "List Vocabulary Items",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/vocab-items?level={{level}}",
+            "description": "Optional filters: `level` and `tag`. Remove the query string to list all items."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Vocabulary Items by Level",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/vocab-items/by-level",
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Vocabulary Item",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/vocab-items/{{vocabItemId}}",
+            "description": "Set `vocabItemId` to an existing seeded vocabulary item."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Learning",
+      "description": "Manage unseen content, study queues, levels, and learning preferences.",
+      "item": [
+        {
+          "name": "Get Learning Levels",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/learn/levels",
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Count Unseen Items",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/learn/count?kind={{kind}}",
+            "description": "Optional `kind`: `grammar` or `vocab`. Remove it to count both."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Learning Queue",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/learn/queue?limit=20&kind={{kind}}",
+            "description": "Returns unseen prompts. Optional `kind`: `grammar` or `vocab`."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add Next Items",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/learn/next?count=5&kind={{kind}}&tz_offset={{tzOffset}}&time_zone={{timeZone}}",
+            "description": "Adds the next unseen prompts to the authenticated user's learning queue."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add Grammar Point",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/learn/add-grammar-point/{{grammarPointId}}?tz_offset={{tzOffset}}&time_zone={{timeZone}}",
+            "description": "Adds all prompts belonging to one grammar point."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add Vocabulary Item",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/learn/add-vocab-item/{{vocabItemId}}?tz_offset={{tzOffset}}&time_zone={{timeZone}}",
+            "description": "Adds all prompts belonging to one vocabulary item."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add CEFR Level",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/learn/add-level/{{level}}?kind={{kind}}&limit=20&tz_offset={{tzOffset}}&time_zone={{timeZone}}",
+            "description": "Adds prompts from a CEFR level. `kind` and `limit` are optional."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Remove CEFR Level",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/learn/level/{{level}}",
+            "description": "Removes a level from future batches and clears unstudied queued items."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Study Queue",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/learn/study-queue",
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mark Items Studied",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/learn/mark-studied",
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Save Learning Preferences",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/learn/preferences",
+            "description": "`content_preference` accepts `both`, `grammar`, or `vocab`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"daily_new_limit\": 10,\n  \"content_preference\": \"both\",\n  \"selected_levels\": [\n    \"A1\",\n    \"A2\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auto-Add Preferred Items",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/learn/auto-add?tz_offset={{tzOffset}}&time_zone={{timeZone}}",
+            "description": "Adds items according to the saved daily limit, content preference, and levels."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Reviews",
+      "description": "Read the due review queue and submit answers. Update `reviewPromptId` from a queue response.",
+      "item": [
+        {
+          "name": "Count Due Reviews",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/reviews/count",
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Review Queue",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/reviews/queue?limit=20&kind={{kind}}",
+            "description": "Returns reviews due now. The test captures the first prompt ID when available."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "const items = Array.isArray(response) ? response : (response.items || response.queue || []);",
+                  "if (items.length && items[0].id) {",
+                  "  pm.collectionVariables.set(\"reviewPromptId\", items[0].id);",
+                  "} else if (items.length && items[0].prompt_id) {",
+                  "  pm.collectionVariables.set(\"reviewPromptId\", items[0].prompt_id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Submit Review Answer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reviews/{{reviewPromptId}}/answer",
+            "description": "Submit an answer for a due prompt. Adjust `user_answer` to match the selected prompt.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_answer\": \"es\",\n  \"local_date\": \"{{localDate}}\",\n  \"tz_offset\": \"{{tzOffset}}\",\n  \"time_zone\": \"{{timeZone}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Statistics",
+      "description": "Authenticated mastery, forecast, and activity reporting.",
+      "item": [
+        {
+          "name": "Mastery Overview",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/stats/mastery-overview?kind={{kind}}",
+            "description": "`kind` accepts `grammar` or `vocab`."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Review Forecast",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/stats/forecast?days=14&start_date={{localDate}}&tz_offset={{tzOffset}}&time_zone={{timeZone}}",
+            "description": "`start_date`, `tz_offset`, and `time_zone` are optional."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Activity History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/stats/activity?days=30&end_date={{localDate}}&tz_offset={{tzOffset}}&time_zone={{timeZone}}",
+            "description": "`end_date`, `tz_offset`, and `time_zone` are optional."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "description": "Requires an admin session. Run **Authentication / Login as Admin** first. The create requests capture IDs used by the following get, update, and delete requests.",
+      "item": [
+        {
+          "name": "List Grammar Points",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/grammar-points",
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Grammar Point",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/admin/grammar-points",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"level\": \"A1\",\n  \"slug\": \"{{adminGrammarSlug}}\",\n  \"title\": \"Postman Grammar Point\",\n  \"short_description\": \"A grammar point created from Postman.\",\n  \"structure\": [\n    \"Subject + verb + complement\"\n  ],\n  \"explanation\": \"This record is intended for API testing and can be deleted with the cleanup request.\",\n  \"examples\": [\n    {\n      \"sentence\": \"Yo estudio español.\",\n      \"translation\": \"I study Spanish.\",\n      \"highlight\": \"estudio\",\n      \"notes\": \"Present tense example.\",\n      \"sort_order\": 0\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"adminGrammarSlug\", `postman-grammar-${Date.now()}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "pm.collectionVariables.set(\"adminGrammarPointId\", response.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Grammar Point",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/grammar-points/{{adminGrammarPointId}}",
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Grammar Point",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/admin/grammar-points/{{adminGrammarPointId}}",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"level\": \"A2\",\n  \"slug\": \"{{adminGrammarSlug}}\",\n  \"title\": \"Updated Postman Grammar Point\",\n  \"short_description\": \"An updated grammar point created from Postman.\",\n  \"structure\": [\n    \"Subject + conjugated verb + complement\"\n  ],\n  \"explanation\": \"Updated through the Dicto Backend API Postman collection.\",\n  \"examples\": [\n    {\n      \"sentence\": \"Nosotros estudiamos español.\",\n      \"translation\": \"We study Spanish.\",\n      \"highlight\": \"estudiamos\",\n      \"notes\": \"Updated present tense example.\",\n      \"sort_order\": 0\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Vocabulary Items",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/vocab-items",
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Vocabulary Item",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/admin/vocab-items",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"level\": \"A1\",\n  \"word\": \"cuaderno\",\n  \"translation\": \"notebook\",\n  \"part_of_speech\": \"noun\",\n  \"gender\": \"m\",\n  \"example_sentence\": \"Escribo en mi cuaderno.\",\n  \"example_translation\": \"I write in my notebook.\",\n  \"notes\": \"Created from the Postman collection.\",\n  \"tags\": \"school,objects\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "pm.collectionVariables.set(\"adminVocabItemId\", response.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Vocabulary Item",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/vocab-items/{{adminVocabItemId}}",
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Vocabulary Item",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/admin/vocab-items/{{adminVocabItemId}}",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"level\": \"A2\",\n  \"word\": \"cuaderno\",\n  \"translation\": \"notebook\",\n  \"part_of_speech\": \"noun\",\n  \"gender\": \"m\",\n  \"example_sentence\": \"Siempre llevo un cuaderno.\",\n  \"example_translation\": \"I always carry a notebook.\",\n  \"notes\": \"Updated from the Postman collection.\",\n  \"tags\": \"school,objects,writing\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Prompts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/prompts?kind={{kind}}",
+            "description": "Optional `kind`: `grammar` or `vocab`. Remove it to list all prompts."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Prompt",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/admin/prompts",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grammar_point_id\": \"{{adminGrammarPointId}}\",\n  \"vocab_item_id\": null,\n  \"kind\": \"grammar\",\n  \"sentence\": \"Yo ___ español todos los días.\",\n  \"notes\": \"Prompt created from Postman.\",\n  \"answers\": [\n    \"estudio\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "pm.collectionVariables.set(\"adminPromptId\", response.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Prompt",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/prompts/{{adminPromptId}}",
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Prompt",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/admin/prompts/{{adminPromptId}}",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grammar_point_id\": \"{{adminGrammarPointId}}\",\n  \"vocab_item_id\": null,\n  \"kind\": \"grammar\",\n  \"sentence\": \"Nosotros ___ español todos los días.\",\n  \"notes\": \"Prompt updated from Postman.\",\n  \"answers\": [\n    \"estudiamos\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Prompt",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/prompts/{{adminPromptId}}",
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 204\", function () {",
+                  "  pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Vocabulary Item",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/vocab-items/{{adminVocabItemId}}",
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 204\", function () {",
+                  "  pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Grammar Point",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/grammar-points/{{adminGrammarPointId}}",
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 204\", function () {",
+                  "  pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Session Cleanup",
+      "description": "Run this after authenticated requests to destroy the server-side session.",
+      "item": [
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/auth/logout",
+            "description": "Destroys the server-side session and clears the cookie."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
